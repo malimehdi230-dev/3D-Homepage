@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Homepage | Developed by Muhammad Ali Mehdi</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <div class="aurora"></div>
+    <div class="hex-grid"></div>
+    <canvas class="matrix-canvas" id="matrixCanvas"></canvas>
+
+    <!-- Cyber Lines -->
+    <div class="cyber-line" style="left: 20%; animation-delay: 0s;"></div>
+    <div class="cyber-line" style="left: 50%; animation-delay: 2s;"></div>
+    <div class="cyber-line" style="left: 80%; animation-delay: 4s;"></div>
+
+    <!-- Floating Elements -->
+    <div class="floating-element" style="top: 10%; left: 15%;">{</div>
+    <div class="floating-element" style="top: 70%; right: 10%; animation-delay: -3s;">}</div>
+    <div class="floating-element" style="bottom: 15%; left: 20%; font-size: 3rem; animation-delay: -5s;">
+        </>
+    </div>
+
+    <!-- Binary Streams -->
+    <div class="binary-stream" style="left: 3%; animation-delay: 0s;">01001101 01000001 01001101</div>
+    <div class="binary-stream" style="right: 3%; animation-delay: -7s;">11010010 10101010 01010101</div>
+
+    <!-- Orbit Element -->
+    <div class="orbit-container" style="top: 15%; left: 10%;">
+        <div class="orbit-element">
+            <div class="orbit-dot"></div>
+        </div>
+    </div>
+
+    <!-- 3D Scene -->
+    <div class="scene-3d">
+        <!-- Main Code Cube -->
+        <div class="code-cube-container">
+            <div class="code-cube">
+                <div class="cube-face front">
+                    </>
+                </div>
+                <div class="cube-face back">{...}</div>
+                <div class="cube-face right">[ ]</div>
+                <div class="cube-face left">( )</div>
+                <div class="cube-face top">01</div>
+                <div class="cube-face bottom">#!</div>
+            </div>
+        </div>
+
+        <!-- Second Code Cube -->
+        <div class="code-cube-container-2">
+            <div class="code-cube-2">
+                <div class="cube-face-2 front">JS</div>
+                <div class="cube-face-2 back">PY</div>
+                <div class="cube-face-2 right">++</div>
+                <div class="cube-face-2 left">=></div>
+                <div class="cube-face-2 top">::</div>
+                <div class="cube-face-2 bottom">$$</div>
+            </div>
+        </div>
+
+        <!-- Torus Rings -->
+        <div class="torus-container">
+            <div class="torus-ring" style="border-color: rgba(0, 255, 136, 0.4);"></div>
+            <div class="torus-ring" style="border-color: rgba(0, 212, 255, 0.4); transform: rotateX(60deg);"></div>
+            <div class="torus-ring" style="border-color: rgba(191, 0, 255, 0.4); transform: rotateY(60deg);"></div>
+        </div>
+    </div>
+
+    <!-- Pyramid -->
+    <div class="pyramid-container" style="bottom: 15%; left: 12%;">
+        <div class="pyramid">
+            <div class="pyramid-face"></div>
+            <div class="pyramid-face"></div>
+            <div class="pyramid-face"></div>
+            <div class="pyramid-face"></div>
+        </div>
+    </div>
+
+    <!-- Floating Code Snippets -->
+    <div class="code-float" style="top: 12%; right: 15%; animation-delay: -2s;">
+        <span style="color: #ff79c6;">async</span> <span style="color: #8be9fd;">function</span> <span
+            style="color: #50fa7b;">build</span>() { }
+    </div>
+    <div class="code-float" style="bottom: 25%; right: 8%; animation-delay: -6s;">
+        <span style="color: #6272a4;">// Dreams → Reality</span>
+    </div>
+    <div class="code-float" style="top: 55%; right: 4%; animation-delay: -4s;">
+        <span style="color: #ff79c6;">const</span> future = <span style="color: #f1fa8c;">"now"</span>;
+    </div>
+
+    <!-- Template Selector Button -->
+    <button class="template-btn" id="templateBtn">
+        <i class="fas fa-palette"></i> Templates
+    </button>
+
+    <!-- Settings Button -->
+    <button class="settings-btn" id="settingsBtn">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Time Widget -->
+        <div class="time-container">
+            <div class="time-widget" id="time">00:00</div>
+            <div class="time-separator"></div>
+            <div class="date-widget" id="date">Loading...</div>
+        </div>
+
+        <!-- Name Title -->
+        <div class="name-container">
+            <h1 class="name-title" id="userName" data-text="YOUR NAME">YOUR NAME</h1>
+            <div class="name-shadow"></div>
+        </div>
+
+        <!-- Typing Subtitle -->
+        <p class="subtitle">
+            <span class="typing-text" id="typingText"></span>
+        </p>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <div class="search-wrapper" style="position: relative;">
+                <input type="text" class="search-bar" placeholder="Search the universe... or Ask AI" id="searchInput">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+            <!-- AI & Background Action Buttons -->
+            <div class="search-action-btns">
+                <button class="ai-action-btn" id="askAiBtn" title="Ask AI">
+                    <i class="fas fa-robot"></i>
+                    <span>Ask AI</span>
+                </button>
+                <button class="ai-action-btn bg-gen-btn" id="bgGenBtn" title="Generate AI Background">
+                    <i class="fas fa-magic"></i>
+                    <span>AI Background</span>
+                </button>
+                <button class="ai-action-btn" id="bgRandomBtn" title="Random AI Theme">
+                    <i class="fas fa-dice"></i>
+                    <span>Random BG</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="links-section">
+            <div class="links-header">
+                <span class="links-title">⚡ Quick Access</span>
+                <button class="manage-btn" id="addLinkBtn">
+                    <i class="fas fa-plus"></i> Add Link
+                </button>
+            </div>
+            <div class="links-grid" id="linksGrid"></div>
+        </div>
+    </div>
+
+    <!-- Particles Container -->
+    <div id="particles"></div>
+
+
+    <!-- AI Loading Overlay -->
+    <div class="ai-loading-overlay" id="aiLoadingOverlay" style="display: none;">
+        <div class="ai-loading-content">
+            <div class="ai-spinner">
+                <div class="ai-spinner-ring"></div>
+                <div class="ai-spinner-ring"></div>
+                <i class="fas fa-magic"
+                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--primary); font-size: 24px; animation: pulse 2s infinite;"></i>
+            </div>
+            <h3 style="color: white; margin-top: 20px; font-family: 'Orbitron'; letter-spacing: 2px;">GENERATING VISION
+            </h3>
+            <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 10px;" id="aiLoadingText">Connecting to
+                neural net...</p>
+        </div>
+    </div>
+
+    <!-- Shortcut Hint -->
+    <div class="shortcut-hint">
+        Press <kbd>/</kbd> to search • <i class="fas fa-magic" style="color:var(--primary);"></i> AI Background • <i
+            class="fas fa-robot" style="color:var(--primary);"></i> Ask AI
+    </div>
+
+    <!-- Developer Credit -->
+    <div class="developer-credit">
+        Developed by <a href="#">Muhammad Ali Mehdi</a>
+    </div>
+
+    <!-- Template Modal -->
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-palette"></i> Choose Template</h2>
+                <button class="modal-close" data-modal="templateModal"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="color: rgba(255,255,255,0.5); margin-bottom: 20px; font-size: 0.9rem;">
+                Select a theme that matches your style. Each template has unique 3D effects and color schemes.
+            </p>
+            <div class="template-grid" id="templateGrid"></div>
+        </div>
+    </div>
+
+    <!-- Add Link Modal -->
+    <div class="modal-overlay" id="linkModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-link"></i> Add New Link</h2>
+                <button class="modal-close" data-modal="linkModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="linkForm">
+                <div class="form-group">
+                    <label class="form-label">Link Name</label>
+                    <input type="text" class="form-input" id="linkName" placeholder="e.g., Netflix" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">URL</label>
+                    <input type="url" class="form-input" id="linkUrl" placeholder="https://example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Choose Icon</label>
+                    <div class="icon-picker" id="iconPicker"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Choose Color</label>
+                    <div class="color-picker-wrapper" id="colorPicker"></div>
+                </div>
+                <button type="submit" class="submit-btn"><i class="fas fa-plus"></i> ADD LINK</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-cog"></i> Settings</h2>
+                <button class="modal-close" data-modal="settingsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    <input type="text" class="form-input" id="settingsName" placeholder="Enter your name" required>
+                </div>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label">Groq API Key (AI Backgrounds &amp; AI Chat)</label>
+                    <input type="password" class="form-input" id="settingsApiKey" placeholder="gsk_...">
+                    <p style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 5px;">Used for AI Background
+                        generation and Ask AI feature.</p>
+                </div>
+                <button type="submit" class="submit-btn" style="margin-top: 20px;"><i class="fas fa-save"></i> SAVE
+                    SETTINGS</button>
+            </form>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p style="color: rgba(255,255,255,0.4); font-size: 0.8rem; text-align: center;">
+                    3D Homepage Templates v1.0<br>
+                    <span style="color: var(--primary);">Developed by Muhammad Ali Mehdi</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Popup -->
+    <div class="modal-overlay" id="aiChatModal">
+        <div class="modal ai-chat-modal">
+            <div class="ai-chat-header">
+                <div class="ai-chat-title">
+                    <div class="ai-chat-avatar"><i class="fas fa-robot"></i></div>
+                    <div>
+                        <div
+                            style="font-family:'Orbitron',sans-serif;font-size:0.95rem;font-weight:700;color:var(--primary);">
+                            Ask AI</div>
+                        <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);letter-spacing:1px;">Powered by Groq
+                            • gpt-oss-120b</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="ai-chat-close" id="aiChatClear" title="Clear Chat History"><i
+                            class="fas fa-trash-alt"></i></button>
+                    <button class="modal-close ai-chat-close" data-modal="aiChatModal"><i
+                            class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="ai-chat-messages" id="aiChatMessages">
+                <div class="ai-chat-msg assistant">
+                    <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="ai-chat-bubble">Hello! I'm your AI assistant powered by Groq. Ask me anything!</div>
+                </div>
+            </div>
+            <div class="ai-chat-composer-wrapper"
+                style="display:flex;flex-direction:column;background:linear-gradient(135deg,color-mix(in srgb, var(--primary) 5%, rgba(0,0,0,0.9)),color-mix(in srgb, var(--secondary) 3%, rgba(0,0,0,0.9)));border-top:1px solid color-mix(in srgb, var(--primary) 18%, transparent);">
+                <div class="ai-chat-tools" style="padding:10px 18px 4px; display:flex; gap:12px;">
+                    <label
+                        style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:rgba(255,255,255,0.7);cursor:pointer;font-family:'Inter',sans-serif;">
+                        <input type="checkbox" id="aiWebSearchToggle"
+                            style="accent-color:var(--primary);cursor:pointer;">
+                        <i class="fas fa-globe" style="color:var(--secondary);"></i> Web Search
+                    </label>
+                </div>
+                <div class="ai-chat-composer" style="background:transparent;border-top:none;padding-top:8px;">
+                    <textarea class="ai-chat-textarea" id="aiChatInput" placeholder="Ask me anything..." rows="1"
+                        autocomplete="off"></textarea>
+                    <button class="ai-send-btn" id="aiChatSend">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Background Prompt Popup -->
+    <div class="modal-overlay" id="bgGenModal">
+        <div class="modal" style="max-width:440px;">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-magic"></i> AI Background Generator</h2>
+                <button class="modal-close" data-modal="bgGenModal"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="color:rgba(255,255,255,0.6);font-size:0.88rem;margin-bottom:16px;">Describe the background you
+                want and AI will create it using CSS gradients and colors.</p>
+            <div class="form-group">
+                <label class="form-label">Your Prompt</label>
+                <input type="text" class="form-input" id="bgGenInput"
+                    placeholder="e.g. deep space nebula purple and blue..." autocomplete="off">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button class="submit-btn" id="bgGenSubmit" style="flex:1;"><i class="fas fa-wand-magic-sparkles"></i>
+                    Generate</button>
+                <button class="submit-btn" id="bgGenRandom"
+                    style="flex:1;background:linear-gradient(135deg,#bf00ff,#00d4ff);"><i class="fas fa-dice"></i>
+                    Surprise Me!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="templates.js"></script>
+    <script src="script.js"></script>
+    <script src="interactions.js"></script>
+</body>
+
+</html>

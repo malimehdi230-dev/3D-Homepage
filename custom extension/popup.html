@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Homepage Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            width: 320px;
+            min-height: 400px;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #0d1117 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .version {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .current-template {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 12px;
+        }
+
+        .template-icon {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            font-size: 1.5rem;
+            color: #00ff88;
+        }
+
+        .template-info {
+            flex: 1;
+        }
+
+        .template-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+
+        .template-desc {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #00ff88;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            border: none;
+            border-radius: 10px;
+            color: #0a0a0f;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .footer {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .developer {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .developer a {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-link {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quick-link i {
+            color: var(--link-color, #00ff88);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i class="fas fa-cube"></i> 3D Homepage</div>
+        <div class="version">Version 1.0.0</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Current Template</div>
+        <div class="current-template">
+            <div class="template-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <div class="template-info">
+                <div class="template-name" id="currentTemplateName">Programmer</div>
+                <div class="template-desc" id="currentTemplateDesc">For developers & coders</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Statistics</div>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="linksCount">5</div>
+                <div class="stat-label">Quick Links</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">15</div>
+                <div class="stat-label">Templates</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Your Links</div>
+        <div class="quick-links" id="quickLinks">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <div class="section">
+        <button class="action-btn" id="openNewTab">
+            <i class="fas fa-external-link-alt"></i> Open Homepage
+        </button>
+        <button class="action-btn secondary" id="resetBtn">
+            <i class="fas fa-undo"></i> Reset to Defaults
+        </button>
+    </div>
+
+    <div class="footer">
+        <div class="developer">
+            Developed with <i class="fas fa-heart" style="color: #ff4d4d;"></i> by<br>
+            <a href="#">Muhammad Ali Mehdi</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load current template
+            const template = localStorage.getItem('homepage_template') || 'programmer';
+            const templates = {
+                programmer: { name: 'Programmer', desc: 'For developers & coders', icon: 'fa-code' },
+                gamer: { name: 'Gamer', desc: 'For gaming enthusiasts', icon: 'fa-gamepad' },
+                anime: { name: 'Anime', desc: 'For anime & manga lovers', icon: 'fa-star' },
+                creator: { name: 'Digital Creator', desc: 'For artists & creators', icon: 'fa-palette' },
+                aiDev: { name: 'AI Developer', desc: 'For AI & ML engineers', icon: 'fa-robot' },
+                cyberpunk: { name: 'Cyberpunk', desc: 'Futuristic neon vibes', icon: 'fa-microchip' },
+                minimal: { name: 'Minimal Dark', desc: 'Clean & focused', icon: 'fa-moon' },
+                retro: { name: 'Retro Gaming', desc: '80s arcade vibes', icon: 'fa-ghost' },
+                space: { name: 'Space Explorer', desc: 'Cosmic adventures', icon: 'fa-rocket' },
+                music: { name: 'Music Producer', desc: 'For beat makers', icon: 'fa-headphones' },
+                crypto: { name: 'Crypto / Web3', desc: 'Blockchain & DeFi', icon: 'fa-bitcoin' },
+                cyberexpert: { name: 'Cyber Expert', desc: 'Matrix style', icon: 'fa-terminal' },
+                nature: { name: 'Zen Coder', desc: 'Peaceful & calm', icon: 'fa-leaf' },
+                synthwave: { name: 'Synthwave', desc: '80s neon aesthetic', icon: 'fa-sun' },
+                scifi: { name: 'Sci-Fi Tech', desc: 'Advanced technology', icon: 'fa-satellite' }
+            };
+
+            const current = templates[template] || templates.programmer;
+            document.getElementById('currentTemplateName').textContent = current.name;
+            document.getElementById('currentTemplateDesc').textContent = current.desc;
+            document.querySelector('.template-icon i').className = `fas ${current.icon}`;
+
+            // Load links
+            try {
+                const links = JSON.parse(localStorage.getItem('homepage_links')) || [];
+                document.getElementById('linksCount').textContent = links.length;
+                
+                const linksContainer = document.getElementById('quickLinks');
+                linksContainer.innerHTML = links.slice(0, 6).map(link => `
+                    <div class="quick-link" style="--link-color: ${link.color}">
+                        <i class="${link.icon}"></i>
+                        ${link.name}
+                    </div>
+                `).join('');
+            } catch {}
+
+            // Open new tab
+            document.getElementById('openNewTab').addEventListener('click', () => {
+                chrome.tabs.create({ url: 'index.html' });
+            });
+
+            // Reset
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                if (confirm('Reset all settings to defaults?')) {
+                    localStorage.removeItem('homepage_template');
+                    localStorage.removeItem('homepage_userName');
+                    localStorage.removeItem('homepage_links');
+                    location.reload();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

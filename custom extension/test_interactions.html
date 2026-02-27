@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Interactions</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --secondary: #00d4ff;
+            --accent: #bf00ff;
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0f;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .test-box {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 255, 136, 0.2);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .box1 { left: 100px; top: 100px; }
+        .box2 { right: 100px; top: 100px; }
+        .box3 { left: 50%; top: 300px; transform: translateX(-50%); }
+
+        .instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid var(--primary);
+            border-radius: 12px;
+            max-width: 300px;
+        }
+
+        .instructions h2 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>🎮 Test Interactions</h2>
+        <ul>
+            <li><strong>Click</strong> boxes for ripple effect</li>
+            <li><strong>Drag</strong> boxes to move them</li>
+            <li><strong>Double-click</strong> to reset position</li>
+            <li><strong>Hover</strong> to see hints</li>
+        </ul>
+        <p style="color: rgba(255,255,255,0.5); font-size: 12px; margin-top: 15px;">
+            If interactions work here, they'll work in your extension!
+        </p>
+    </div>
+
+    <div class="test-box box1">
+        <div>Box 1<br>Drag Me!</div>
+    </div>
+
+    <div class="test-box box2">
+        <div>Box 2<br>Click Me!</div>
+    </div>
+
+    <div class="test-box box3">
+        <div>Box 3<br>Try All!</div>
+    </div>
+
+    <div class="status" id="status">
+        Interactions: Loading...
+    </div>
+
+    <script>
+        // Simple test version of interactions
+        class TestInteractions {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                console.log('Test interactions starting...');
+                const status = document.getElementById('status');
+                status.textContent = 'Interactions: Ready ✓';
+                status.style.color = '#00ff88';
+
+                document.querySelectorAll('.test-box').forEach(box => {
+                    this.makeInteractive(box);
+                });
+            }
+
+            makeInteractive(element) {
+                let isDragging = false;
+                let startX, startY, initialLeft, initialTop;
+                let dragStarted = false;
+
+                // Add hint
+                const hint = document.createElement('div');
+                hint.style.cssText = `
+                    position: absolute;
+                    bottom: -30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.9);
+                    color: var(--primary);
+                    padding: 5px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    white-space: nowrap;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    pointer-events: none;
+                    border: 1px solid var(--primary);
+                `;
+                hint.textContent = 'Click • Drag • Double-click';
+                element.style.position = 'absolute';
+                element.appendChild(hint);
+
+                // Hover
+                element.addEventListener('mouseenter', () => {
+                    hint.style.opacity = '1';
+                    element.style.filter = 'brightness(1.4)';
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    hint.style.opacity = '0';
+                    element.style.filter = 'brightness(1)';
+                });
+
+                // Drag
+                element.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    dragStarted = false;
+                    const rect = element.getBoundingClientRect();
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    initialLeft = rect.left;
+                    initialTop = rect.top;
+                    element.style.cursor = 'grabbing';
+                    element.style.zIndex = '1000';
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+
+                    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                        dragStarted = true;
+                    }
+
+                    element.style.left = (initialLeft + deltaX) + 'px';
+                    element.style.top = (initialTop + deltaY) + 'px';
+                    element.style.right = 'auto';
+                    element.style.bottom = 'auto';
+                    element.style.transform = 'none';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    if (isDragging) {
+                        isDragging = false;
+                        element.style.cursor = 'grab';
+                        element.style.zIndex = '';
+                        setTimeout(() => { dragStarted = false; }, 100);
+                    }
+                });
+
+                // Click
+                element.addEventListener('click', (e) => {
+                    if (!dragStarted) {
+                        console.log('Clicked!');
+                        this.createRipple(e, element);
+                    }
+                });
+
+                // Double-click reset
+                element.addEventListener('dblclick', () => {
+                    console.log('Reset!');
+                    element.style.left = '';
+                    element.style.top = '';
+                    element.style.right = '';
+                    element.style.bottom = '';
+                    element.style.transform = '';
+                });
+
+                element.style.cursor = 'grab';
+            }
+
+            createRipple(e, container) {
+                const ripple = document.createElement('div');
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    background: var(--primary);
+                    border-radius: 50%;
+                    pointer-events: none;
+                    left: ${x}px;
+                    top: ${y}px;
+                    transform: translate(-50%, -50%);
+                    z-index: 999;
+                    opacity: 0.8;
+                `;
+                
+                container.appendChild(ripple);
+                
+                // Animate
+                let scale = 0;
+                const animate = () => {
+                    scale += 0.3;
+                    const opacity = 1 - (scale / 4);
+                    ripple.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                    ripple.style.opacity = opacity;
+                    
+                    if (scale < 4) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        ripple.remove();
+                    }
+                };
+                animate();
+            }
+        }
+
+        // Initialize
+        new TestInteractions();
+    </script>
+</body>
+</html>
