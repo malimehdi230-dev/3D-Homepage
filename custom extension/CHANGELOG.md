@@ -1,0 +1,57 @@
+# Changelog — 3D Parallax New Tab
+
+All notable changes to this project are documented here.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [2.1.0] — 2026-06-27
+
+### Added
+- **Toast notification system** (`window.toast()`) — replaces all `alert()` / `confirm()` calls with non-blocking success / error / info / warning toasts with animated progress bars
+- **Loading screen** — full-screen fade-out splash rendered before the main UI to prevent layout flash on first load
+- **Keyboard shortcuts overlay** — press `?` for a modal listing all 7 shortcuts (T, S, A, C, ?, Ctrl+K, Escape)
+- **Customization panel** — slide-up panel (Ctrl+K) with live color pickers and toggles for matrix rain, particle depth, and parallax
+- **Search engine selector** — Google, Bing, DuckDuckGo, YouTube toggle stored per session
+- **Search history dropdown** — saves last 10 queries; click to re-run, individual delete, one-click clear all
+- **Quick-links drag-to-reorder** — hold and drag any link card to a new position; order persists to `localStorage`
+- **Template picker redesign** — gradient color-bar, active badge, keyboard navigation, toast on apply
+- **Popup mini-dashboard** (v2.1.0) — stats row, template card preview, quick-launch chips, feature toggles, Export / Reset buttons
+- **AI provider snippet importer** — paste a Groq JS / Python / curl snippet; key + model auto-detected and pre-filled
+- **AI provider test toast** — pass / fail feedback surfaced via toast instead of console
+- **Weather 30-minute cache** — avoids redundant Open-Meteo fetches; geo retry button on error
+- **Fluid type scale (T02)** — CSS `clamp()` responsive sizing for name title, clock, date, search bar, and link labels; short-viewport overrides via `@media (max-height: 700px)`
+- **Performance** — `requestAnimationFrame` for matrix rain, `requestIdleCallback` for deferred module init, scroll/resize throttle at 16 ms
+- **Import/Export filename** — settings file now saved as `3d-parallax-settings.json`
+- **Install-date tracking** — first-launch date stored in `localStorage` for popup stats
+- **models.json datalist** — AI model input autocompletes from the bundled Groq models list
+
+### Changed
+- Manifest bumped to **v2.1.0**; `minimum_chrome_version` set to **109**
+- CSP updated to `script-src 'self'; object-src 'self'` (no unsafe-inline / eval)
+- `popup.js` migrated from `chrome.storage.sync` → `chrome.storage.local` for consistency with the main page
+- `ai-providers.js` failover engine hardened with per-provider error isolation
+- `wallpaper.js` wrapped in `try/catch` to prevent unhandled promise rejections crashing the page
+- Settings footer version label updated to **v2.1.0**
+- All remaining `alert()` calls removed; replaced with `window.toast()`
+
+### Fixed
+- Duplicate `initSearch()` definition removed from `script.js`
+- XSS: all dynamic HTML rendered via `_esc()` throughout `renderLinks()`, `renderAIProviders()`, template grid, search history
+- Dead files (`resume.txt`, `zipFile.zip`) deleted from repository
+- `dev/` test-artifact folder added to `.gitignore`
+- Wallpaper drag-and-drop no longer swallows the `dragover` event on the whole page
+
+### Security
+- No external JS loaded via CDN — all scripts are local (`'self'` CSP)
+- API keys stored only in `localStorage` on the user's device; never transmitted to any first-party server
+- `host_permissions` array left empty — outbound API calls are initiated by the user's own key
+
+---
+
+## [2.0.1] — 2025-xx-xx
+
+- Initial public release on Chrome Web Store
+- 18 3D parallax templates
+- AI chat powered by Groq
+- Custom wallpaper (image + video), weather widget, quick links

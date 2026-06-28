@@ -26,14 +26,12 @@ class Interactive3DObjects {
     }
 
     delayedInit() {
-        // Wait for main app to finish
-        setTimeout(() => {
-            console.log('Making objects interactive...');
+        this.makeObjectsInteractive();
+        // Re-initialize when template changes (event-based, not setTimeout)
+        document.addEventListener('templateChanged', () => {
             this.makeObjectsInteractive();
-
-            // Re-check after template changes
-            this.observeTemplateChanges();
-        }, 2000);
+        });
+        this.observeTemplateChanges();
     }
 
     addStyles() {

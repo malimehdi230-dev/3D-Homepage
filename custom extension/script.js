@@ -504,15 +504,34 @@ class Enhanced3DObjects {
     }
 }
 
+// WMO weather-code → emoji mapping (open-meteo codes)
+const WMO_ICONS = {
+    0: '☀️',  1: '🌤️', 2: '⛅',  3: '☁️',
+    45: '🌫️', 48: '🌫️',
+    51: '🌦️', 53: '🌦️', 55: '🌦️',
+    56: '🌨️', 57: '🌨️',
+    61: '🌧️', 63: '🌧️', 65: '🌧️',
+    66: '🌨️', 67: '🌨️',
+    71: '🌨️', 73: '🌨️', 75: '🌨️', 77: '🌨️',
+    80: '🌦️', 81: '🌧️', 82: '⛈️',
+    85: '🌨️', 86: '🌨️',
+    95: '⛈️', 96: '⛈️', 99: '⛈️'
+};
+
 class HomepageApp {
     constructor() {
         this.currentTemplate = this.loadSetting('template') || 'programmer';
         this.userName = this.loadSetting('userName') || 'YOUR NAME';
         this.apiKey = this.loadSetting('apiKey') || '';
-        this.aiBackground = this.loadSetting('aiBackground') || null;
+        this.aiModel = this.loadSetting('aiModel') || 'openai/gpt-oss-120b';
         this.links = this.loadLinks();
         this.selectedIcon = AVAILABLE_ICONS[0];
         this.selectedColor = AVAILABLE_COLORS[0];
+
+        // Track install date for stats
+        if (!localStorage.getItem('homepage_install_date')) {
+            localStorage.setItem('homepage_install_date', String(Date.now()));
+        }
 
         this.init();
     }
@@ -524,13 +543,6 @@ class HomepageApp {
         // Apply template with 3D objects
         this.applyTemplate(this.currentTemplate);
 
-        // If there was a saved AI background, re-apply it over the template background
-        if (this.aiBackground) {
-            document.body.style.background = this.aiBackground;
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
-        }
-
         this.renderLinks();
         this.initTime();
         this.initTyping();
@@ -541,7 +553,26 @@ class HomepageApp {
         this.initKeyboardShortcuts();
         this.initEventListeners();
         this.initAIChat();
-        this.initBgGen();
+
+        // New features
+        Wallpaper.init();          // async restore — non-blocking
+        // ElementPacks.init() removed
+        // Restore subtle-accents class if it was previously enabled
+        if (localStorage.getItem('homepage_wp_subtle') === '1') {
+            // Delay until Wallpaper.restore() has had a chance to set wp-static
+            setTimeout(() => {
+                if (document.body.classList.contains('wp-static')) {
+                    document.body.classList.add('wp-subtle');
+                }
+            }, 300);
+        }
+        this.initWeather();
+        this.initWallpaperControls();
+        this.initElementPacksUI();
+        this.initHeadlineUI();
+        this.initImportExport();
+        this.initAIProvidersUI();
+        this.updateAiModelLabel();
     }
 
     // Initialize all event listeners
@@ -570,16 +601,17 @@ class HomepageApp {
             askAiBtn.addEventListener('click', () => this.openAIChatModal());
         }
 
-        // AI Background button
-        const bgGenBtn = document.getElementById('bgGenBtn');
-        if (bgGenBtn) {
-            bgGenBtn.addEventListener('click', () => this.openBgGenModal());
-        }
-
-        // Random BG button
-        const bgRandomBtn = document.getElementById('bgRandomBtn');
-        if (bgRandomBtn) {
-            bgRandomBtn.addEventListener('click', () => this.generateRandomAIBackground());
+        // Customize button — slide-up panel
+        const customizeBtn = document.getElementById('customizeBtn');
+        if (customizeBtn) {
+            customizeBtn.addEventListener('click', () => {
+                let panel = document.getElementById('customizationPanel');
+                if (!panel) {
+                    panel = this._buildCustomizationPanel();
+                    document.body.appendChild(panel);
+                }
+                panel.classList.toggle('open');
+            });
         }
 
         // Modal close buttons
@@ -606,6 +638,25 @@ class HomepageApp {
         if (settingsForm) {
             settingsForm.addEventListener('submit', (e) => this.handleSaveSettings(e));
         }
+
+        // Drag-and-drop wallpaper — anywhere on the page
+        document.addEventListener('dragover', e => {
+            e.preventDefault();
+            document.body.classList.add('drag-over');
+        });
+        document.addEventListener('dragleave', e => {
+            if (!e.relatedTarget) document.body.classList.remove('drag-over');
+        });
+        document.addEventListener('drop', async e => {
+            e.preventDefault();
+            document.body.classList.remove('drag-over');
+            const file = e.dataTransfer?.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+            await Wallpaper.setFromFile(file);
+            this._updateWpThumbnail();
+            window.toast?.('Wallpaper set by drag & drop!', 'success', 2000);
+        });
     }
 
     // Storage Methods
@@ -621,6 +672,12 @@ class HomepageApp {
         try {
             localStorage.setItem(`homepage_${key}`, value);
         } catch { }
+        // Mirror to chrome.storage.local so popup.js can read it
+        try {
+            if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+                chrome.storage.local.set({ [`homepage_${key}`]: value });
+            }
+        } catch {}
     }
 
     loadLinks() {
@@ -634,8 +691,117 @@ class HomepageApp {
 
     saveLinks() {
         try {
-            localStorage.setItem('homepage_links', JSON.stringify(this.links));
+            const v = JSON.stringify(this.links);
+            localStorage.setItem('homepage_links', v);
+            if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+                chrome.storage.local.set({ homepage_links: v });
+            }
         } catch { }
+    }
+
+    // ── Search Engine & History ──────────────────────────────────────────
+    initSearch() {
+        const input   = document.getElementById('searchInput');
+        const btn     = document.getElementById('searchBtn');
+        const engines = document.getElementById('searchEngines');
+        const histDD  = document.getElementById('searchHistoryDropdown');
+
+        const ENGINES = {
+            google:     q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+            bing:       q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+            duckduckgo: q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+            youtube:    q => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+        };
+
+        let currentEngine = localStorage.getItem('homepage_search_engine') || 'google';
+
+        // Set active engine button
+        const setEngine = (e) => {
+            currentEngine = e;
+            localStorage.setItem('homepage_search_engine', e);
+            document.querySelectorAll('.engine-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.engine === e);
+            });
+        };
+        setEngine(currentEngine);
+
+        document.querySelectorAll('.engine-btn').forEach(b => {
+            b.addEventListener('click', () => setEngine(b.dataset.engine));
+        });
+
+        const doSearch = () => {
+            const q = input?.value.trim();
+            if (!q) return;
+            // Save history
+            let hist = [];
+            try { hist = JSON.parse(localStorage.getItem('homepage_search_history') || '[]'); } catch {}
+            hist = [q, ...hist.filter(h => h !== q)].slice(0, 6);
+            try { localStorage.setItem('homepage_search_history', JSON.stringify(hist)); } catch {}
+            window.location.href = ENGINES[currentEngine]?.(q) || ENGINES.google(q);
+        };
+
+        btn?.addEventListener('click', doSearch);
+        input?.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+        // Show engines + history on focus
+        input?.addEventListener('focus', () => {
+            if (engines) engines.style.display = 'flex';
+            this._renderSearchHistory();
+        });
+
+        input?.addEventListener('input', () => {
+            if (input.value.trim()) {
+                if (histDD) histDD.style.display = 'none';
+            } else {
+                this._renderSearchHistory();
+            }
+        });
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.search-wrapper') && !e.target.closest('.search-engines')) {
+                if (engines) engines.style.display = 'none';
+                if (histDD) histDD.style.display = 'none';
+            }
+        });
+    }
+
+    _renderSearchHistory() {
+        const histDD = document.getElementById('searchHistoryDropdown');
+        if (!histDD) return;
+        let hist = [];
+        try { hist = JSON.parse(localStorage.getItem('homepage_search_history') || '[]'); } catch {}
+        if (!hist.length) { histDD.style.display = 'none'; return; }
+
+        histDD.innerHTML = hist.map((h, i) => `
+            <div class="history-item">
+                <i class="fas fa-history"></i>
+                <span class="history-text" data-query="${this._esc(h)}">${this._esc(h)}</span>
+                <button class="history-del" data-idx="${i}" title="Remove">✕</button>
+            </div>
+        `).join('') + `<div class="history-clear-row"><button id="historyClearAll">Clear all</button></div>`;
+
+        histDD.style.display = 'block';
+
+        histDD.querySelectorAll('.history-text').forEach(el => {
+            el.addEventListener('click', () => {
+                document.getElementById('searchInput').value = el.dataset.query;
+                histDD.style.display = 'none';
+            });
+        });
+        histDD.querySelectorAll('.history-del').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let hist = [];
+                try { hist = JSON.parse(localStorage.getItem('homepage_search_history') || '[]'); } catch {}
+                hist.splice(parseInt(btn.dataset.idx), 1);
+                localStorage.setItem('homepage_search_history', JSON.stringify(hist));
+                this._renderSearchHistory();
+            });
+        });
+        document.getElementById('historyClearAll')?.addEventListener('click', () => {
+            localStorage.removeItem('homepage_search_history');
+            histDD.style.display = 'none';
+        });
     }
 
     // Template Methods
@@ -645,10 +811,6 @@ class HomepageApp {
 
         this.currentTemplate = templateId;
         this.saveSetting('template', templateId);
-
-        // Reset AI background when switching templates
-        this.aiBackground = null;
-        this.saveSetting('aiBackground', '');
 
         const root = document.documentElement;
         root.style.setProperty('--primary', template.colors.primary);
@@ -666,8 +828,9 @@ class HomepageApp {
             nameEl.setAttribute('data-text', this.userName);
         }
 
-        // Update roles for typing effect
-        this.roles = template.roles;
+        // Update roles for typing effect — prefer saved custom lines over template defaults
+        const savedLines = this.loadHeadlineLines?.();
+        this.roles = (savedLines && savedLines.length) ? savedLines : template.roles;
         this.phraseIndex = 0;
         this.charIndex = 0;
 
@@ -846,14 +1009,16 @@ class HomepageApp {
         if (!grid) return;
 
         grid.innerHTML = this.links.map((link, index) => `
-            <a href="${link.url}" class="link-card" style="--card-color: ${link.color}; --card-glow: ${link.color}40;">
+            <a href="${this._esc(link.url)}" class="link-card"
+               style="--card-color: ${this._esc(link.color)}; --card-glow: ${this._esc(link.color)}40;"
+               draggable="true" data-index="${index}">
                 <button class="remove-btn" data-index="${index}">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="link-icon-wrapper">
-                    <i class="${link.icon} link-icon" style="color: ${link.color};"></i>
+                    <i class="${this._esc(link.icon)} link-icon" style="color: ${this._esc(link.color)};"></i>
                 </div>
-                <span class="link-name">${link.name}</span>
+                <span class="link-name">${this._esc(link.name)}</span>
             </a>
         `).join('');
 
@@ -864,6 +1029,45 @@ class HomepageApp {
                 e.stopPropagation();
                 const index = parseInt(btn.dataset.index);
                 this.removeLink(index);
+            });
+        });
+
+        // Drag-to-reorder quick links
+        this._initLinkDrag(grid);
+    }
+
+    _initLinkDrag(grid) {
+        let dragSrc = null;
+
+        grid.querySelectorAll('.link-card[draggable]').forEach(card => {
+            card.addEventListener('dragstart', e => {
+                dragSrc = card;
+                card.classList.add('link-drag-active');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', card.dataset.index);
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('link-drag-active');
+                grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+            });
+            card.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (card !== dragSrc) {
+                    grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+                    card.classList.add('link-drag-over');
+                }
+            });
+            card.addEventListener('drop', e => {
+                e.preventDefault();
+                if (!dragSrc || dragSrc === card) return;
+                const fromIdx = parseInt(dragSrc.dataset.index);
+                const toIdx   = parseInt(card.dataset.index);
+                if (isNaN(fromIdx) || isNaN(toIdx)) return;
+                const moved = this.links.splice(fromIdx, 1)[0];
+                this.links.splice(toIdx, 0, moved);
+                this.saveLinks();
+                this.renderLinks();
             });
         });
     }
@@ -902,41 +1106,83 @@ class HomepageApp {
         if (modal) {
             modal.classList.add('active');
             document.getElementById('settingsName').value = this.userName;
-            document.getElementById('settingsApiKey').value = this.apiKey;
+
+            // Render dynamic sections every time the modal opens
+            this.renderAIProviders();
+            this.renderPackGrid();
+            this.renderHeadlineLines();
+            this._updateWpThumbnail();
+
+            // Populate wallpaper controls
+            const s = Wallpaper.getSettings();
+            const blur = s.blur ?? 0;
+            const dim  = Math.round((s.dim ?? 0.3) * 100);
+            const blend = s.blend || 'normal';
+            const blurEl = document.getElementById('wpBlur');
+            const dimEl  = document.getElementById('wpDim');
+            const blendEl = document.getElementById('wpBlend');
+            const parEl   = document.getElementById('wpParallax');
+            if (blurEl)  { blurEl.value  = blur;  document.getElementById('blurVal').textContent = `${blur}px`; }
+            if (dimEl)   { dimEl.value   = dim;   document.getElementById('dimVal').textContent  = `${dim}%`;  }
+            if (blendEl) blendEl.value   = blend;
+            if (parEl)   parEl.checked   = localStorage.getItem('homepage_wallpaper_parallax') === '1';
+            const subtleEl = document.getElementById('wpSubtle');
+            if (subtleEl) subtleEl.checked = localStorage.getItem('homepage_wp_subtle') === '1';
         }
     }
 
     closeAllModals() {
         document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+        // Also close customization panel
+        document.getElementById('customizationPanel')?.classList.remove('open');
     }
 
     renderTemplateGrid() {
         const grid = document.getElementById('templateGrid');
         if (!grid) return;
 
-        grid.innerHTML = Object.values(TEMPLATES).map(template => `
-            <div class="template-card ${this.currentTemplate === template.id ? 'active' : ''}" 
+        grid.innerHTML = Object.values(TEMPLATES).map(template => {
+            const isActive = this.currentTemplate === template.id;
+            return `
+            <div class="template-card ${isActive ? 'active' : ''}"
                  style="--template-color: ${template.colors.primary};"
-                 data-template="${template.id}">
+                 data-template="${template.id}"
+                 role="button" tabindex="0"
+                 aria-label="${template.name}${isActive ? ' (active)' : ''}">
+                ${isActive ? '<div class="template-card-active-badge"><i class="fas fa-check"></i></div>' : ''}
+                <div class="template-color-bar" style="background:linear-gradient(135deg,${template.colors.primary},${template.colors.secondary});"></div>
                 <div class="template-icon" style="color: ${template.colors.primary};">
                     <i class="${template.icon}"></i>
                 </div>
                 <div class="template-name">${template.name}</div>
                 <div class="template-desc">${template.description}</div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
-        // Add click listeners
+        // Add click + keyboard listeners
         document.querySelectorAll('.template-card').forEach(card => {
             card.addEventListener('click', () => {
                 const templateId = card.dataset.template;
                 this.selectTemplate(templateId);
+            });
+            card.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.selectTemplate(card.dataset.template);
+                }
             });
         });
     }
 
     selectTemplate(templateId) {
         this.applyTemplate(templateId);
+        window.toast?.(`Template "${TEMPLATES[templateId]?.name || templateId}" applied.`, 'success', 2000);
+        
+        // Disable custom wallpaper when selecting a prebuilt theme
+        if (window.Wallpaper) {
+            Wallpaper.clear();
+        }
+        
         this.renderTemplateGrid();
 
         // Refresh particles with new color
@@ -993,16 +1239,15 @@ class HomepageApp {
         this.addLink(name, url, this.selectedIcon, this.selectedColor);
         this.closeAllModals();
         document.getElementById('linkForm').reset();
+        window.toast?.(`Link "${this._esc(name)}" added.`, 'success', 2000);
     }
 
     handleSaveSettings(event) {
         event.preventDefault();
         const name = document.getElementById('settingsName').value;
-        const key = document.getElementById('settingsApiKey').value;
         this.updateUserName(name);
-        this.apiKey = key;
-        this.saveSetting('apiKey', key);
         this.closeAllModals();
+        window.toast?.('Settings saved.', 'success', 2000);
     }
 
     // Time
@@ -1025,29 +1270,51 @@ class HomepageApp {
         setInterval(update, 1000);
     }
 
+    // ── Headline lines persistence ─────────────────────────────────────────
+    loadHeadlineLines() {
+        try { return JSON.parse(localStorage.getItem('homepage_headline_lines') || 'null'); }
+        catch { return null; }
+    }
+    saveHeadlineLines(lines) {
+        try { localStorage.setItem('homepage_headline_lines', JSON.stringify(lines)); } catch {}
+    }
+
     // Typing Effect
     initTyping() {
-        this.roles = TEMPLATES[this.currentTemplate]?.roles || ['Developer'];
-        this.phraseIndex = 0;
-        this.charIndex = 0;
-        this.isDeleting = false;
+        const custom = this.loadHeadlineLines();
+        this.roles = (custom && custom.length) ? custom : (TEMPLATES[this.currentTemplate]?.roles || ['Developer']);
+        this.typingEnabled = localStorage.getItem('homepage_headline_typewriter') !== '0';
+        this.typingSpeed   = parseInt(localStorage.getItem('homepage_headline_speed') || '80', 10);
+        this.phraseIndex   = 0;
+        this.charIndex     = 0;
+        this.isDeleting    = false;
+
+        const typingEls = document.querySelectorAll('.typing-text');
+        if (typingEls.length === 0) return;
+
+        if (!this.typingEnabled) {
+            typingEls.forEach(el => el.textContent = this.roles[0] || '');
+            return;
+        }
         this.typeEffect();
     }
 
     typeEffect() {
-        const current = this.roles[this.phraseIndex];
-        const typingEl = document.getElementById('typingText');
-        if (!typingEl) return;
+        if (!this.typingEnabled) return;
+        const current  = this.roles[this.phraseIndex];
+        const typingEls = document.querySelectorAll('.typing-text');
+        if (typingEls.length === 0) return;
 
         if (this.isDeleting) {
-            typingEl.textContent = current.substring(0, this.charIndex - 1);
+            typingEls.forEach(el => el.textContent = current.substring(0, this.charIndex - 1));
             this.charIndex--;
         } else {
-            typingEl.textContent = current.substring(0, this.charIndex + 1);
+            typingEls.forEach(el => el.textContent = current.substring(0, this.charIndex + 1));
             this.charIndex++;
         }
 
-        let typeSpeed = this.isDeleting ? 30 : 80;
+        const spd = this.typingSpeed || 80;
+        let typeSpeed = this.isDeleting ? Math.max(15, Math.round(spd * 0.35)) : spd;
 
         if (!this.isDeleting && this.charIndex === current.length) {
             typeSpeed = 2500;
@@ -1061,27 +1328,184 @@ class HomepageApp {
         setTimeout(() => this.typeEffect(), typeSpeed);
     }
 
-    // Search
-    initSearch() {
-        const input = document.getElementById('searchInput');
-        const btn = document.getElementById('searchBtn');
+    // ── Headline UI ────────────────────────────────────────────────────────
+    initHeadlineUI() {
+        // AI Generate panel toggle
+        document.getElementById('aiHeadlineBtn')?.addEventListener('click', () => {
+            const p = document.getElementById('aiHeadlinePanel');
+            if (!p) return;
+            const vis = p.style.display !== 'none';
+            p.style.display = vis ? 'none' : 'block';
+            if (!vis) document.getElementById('aiHeadlineSeed')?.focus();
+        });
 
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.performSearch();
+        // Speed slider
+        const speedSlider = document.getElementById('headlineSpeed');
+        const speedVal    = document.getElementById('headlineSpeedVal');
+        if (speedSlider) {
+            speedSlider.addEventListener('input', () => {
+                const v = parseInt(speedSlider.value, 10);
+                if (speedVal) speedVal.textContent = `${v}ms`;
+                this.typingSpeed = v;
+                localStorage.setItem('homepage_headline_speed', String(v));
             });
         }
 
-        if (btn) {
-            btn.addEventListener('click', () => this.performSearch());
+        // Typewriter toggle
+        const twChk = document.getElementById('headlineTypewriterOn');
+        if (twChk) {
+            twChk.addEventListener('change', () => {
+                this.typingEnabled = twChk.checked;
+                localStorage.setItem('homepage_headline_typewriter', twChk.checked ? '1' : '0');
+                if (twChk.checked) {
+                    this.charIndex = 0; this.isDeleting = false;
+                    this.typeEffect();
+                } else {
+                    const els = document.querySelectorAll('.typing-text');
+                    els.forEach(el => el.textContent = this.roles[0] || '');
+                }
+            });
         }
+
+        // Add line
+        const addBtn  = document.getElementById('addHeadlineLineBtn');
+        const addInp  = document.getElementById('newHeadlineLine');
+        const doAdd = () => {
+            const val = addInp?.value.trim();
+            if (!val) return;
+            const lines = [...this.roles, val];
+            this.roles = lines;
+            this.saveHeadlineLines(lines);
+            if (addInp) addInp.value = '';
+            this.renderHeadlineLines();
+        };
+        addBtn?.addEventListener('click', doAdd);
+        addInp?.addEventListener('keypress', e => { if (e.key === 'Enter') doAdd(); });
+
+        // AI generate headlines
+        document.getElementById('generateHeadlineBtn')?.addEventListener('click', () => this._generateAIHeadlines());
+        document.getElementById('aiHeadlineSeed')?.addEventListener('keypress', e => {
+            if (e.key === 'Enter') this._generateAIHeadlines();
+        });
     }
 
-    performSearch() {
-        const query = document.getElementById('searchInput')?.value.trim();
-        if (query) {
-            window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-            document.getElementById('searchInput').value = '';
+    renderHeadlineLines() {
+        const list = document.getElementById('headlineLinesList');
+        if (!list) return;
+
+        // Restore controls to current state
+        const twChk = document.getElementById('headlineTypewriterOn');
+        if (twChk) twChk.checked = this.typingEnabled !== false;
+        const spd = document.getElementById('headlineSpeed');
+        if (spd) { spd.value = this.typingSpeed || 80; }
+        const spdV = document.getElementById('headlineSpeedVal');
+        if (spdV) spdV.textContent = `${this.typingSpeed || 80}ms`;
+
+        if (!this.roles.length) {
+            list.innerHTML = '<p style="color:rgba(255,255,255,0.25);font-size:0.78rem;font-family:Fira Code,monospace;padding:6px 0;">No lines — add one below.</p>';
+            return;
+        }
+
+        list.innerHTML = this.roles.map((line, i) => `
+            <div class="headline-line-item">
+                <span class="headline-line-text">${this._esc(line)}</span>
+                <div class="headline-line-btns">
+                    <button class="btn btn-icon btn-secondary"
+                            data-hl-up="${i}" title="Move up"
+                            ${i === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-up"></i></button>
+                    <button class="btn btn-icon btn-secondary"
+                            data-hl-down="${i}" title="Move down"
+                            ${i === this.roles.length - 1 ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-down"></i></button>
+                    <button class="btn btn-icon btn-secondary btn-icon-danger"
+                            data-hl-del="${i}" title="Remove">
+                        <i class="fas fa-times"></i></button>
+                </div>
+            </div>`).join('');
+
+        // Events
+        list.querySelectorAll('[data-hl-up]').forEach(b => b.addEventListener('click', () => {
+            const i = parseInt(b.dataset.hlUp, 10);
+            if (i === 0) return;
+            [this.roles[i - 1], this.roles[i]] = [this.roles[i], this.roles[i - 1]];
+            this.saveHeadlineLines(this.roles);
+            this.renderHeadlineLines();
+        }));
+        list.querySelectorAll('[data-hl-down]').forEach(b => b.addEventListener('click', () => {
+            const i = parseInt(b.dataset.hlDown, 10);
+            if (i >= this.roles.length - 1) return;
+            [this.roles[i], this.roles[i + 1]] = [this.roles[i + 1], this.roles[i]];
+            this.saveHeadlineLines(this.roles);
+            this.renderHeadlineLines();
+        }));
+        list.querySelectorAll('[data-hl-del]').forEach(b => b.addEventListener('click', () => {
+            const i = parseInt(b.dataset.hlDel, 10);
+            this.roles.splice(i, 1);
+            if (!this.roles.length) {
+                this.roles = TEMPLATES[this.currentTemplate]?.roles || ['Developer'];
+                this.saveHeadlineLines(null); // null = use template default
+                localStorage.removeItem('homepage_headline_lines');
+            } else {
+                this.saveHeadlineLines(this.roles);
+            }
+            this.phraseIndex = Math.min(this.phraseIndex, this.roles.length - 1);
+            this.renderHeadlineLines();
+        }));
+    }
+
+    async _generateAIHeadlines() {
+        const seed     = document.getElementById('aiHeadlineSeed')?.value.trim() || '';
+        const statusEl = document.getElementById('aiHeadlineStatus');
+        const resultsEl = document.getElementById('aiHeadlineResults');
+        const btn      = document.getElementById('generateHeadlineBtn');
+
+        if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating…'; btn.disabled = true; }
+        if (statusEl) { statusEl.textContent = ''; statusEl.className = 'snippet-note'; }
+        if (resultsEl) resultsEl.style.display = 'none';
+
+        try {
+            const ctx = [seed, this.currentTemplate].filter(Boolean).join(', ');
+            const messages = [
+                { role: 'system', content: 'Generate short punchy browser-homepage headline phrases. Return ONLY the phrases, one per line, no numbering, no quotes, no markdown, no punctuation at end of lines.' },
+                { role: 'user',   content: `Generate 7 short (2–5 word) punchy headline phrases for a ${ctx || 'general'} theme. Plain text only.` }
+            ];
+            const { response } = await AIProviders.aiComplete(messages, { stream: false, maxTokens: 180 });
+            const data = await response.json();
+            const raw  = data.choices?.[0]?.message?.content?.trim() || '';
+            const lines = raw.split('\n')
+                .map(l => l.replace(/^[-•*\d.)]+\s*/, '').replace(/["'`]/g, '').trim())
+                .filter(l => l.length > 0 && l.length < 55)
+                .slice(0, 8);
+
+            if (!lines.length) throw new Error('No lines returned');
+
+            // Render chips
+            if (resultsEl) {
+                resultsEl.style.display = 'block';
+                resultsEl.innerHTML = lines.map((l, i) => `
+                    <span class="ai-headline-chip" data-line="${this._esc(l)}" data-idx="${i}">
+                        <i class="fas fa-plus" style="font-size:0.65rem;"></i> ${this._esc(l)}
+                    </span>`).join('');
+
+                resultsEl.querySelectorAll('.ai-headline-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        if (chip.classList.contains('added')) return;
+                        const line = chip.dataset.line;
+                        this.roles.push(line);
+                        this.saveHeadlineLines(this.roles);
+                        this.renderHeadlineLines();
+                        chip.classList.add('added');
+                        chip.innerHTML = `<i class="fas fa-check" style="font-size:0.65rem;"></i> ${this._esc(line)}`;
+                    });
+                });
+            }
+
+            if (statusEl) { statusEl.textContent = 'Click a phrase to add it to your headline lines.'; statusEl.className = 'snippet-note ok'; }
+        } catch (err) {
+            if (statusEl) { statusEl.textContent = err.message || 'Generation failed.'; statusEl.className = 'snippet-note err'; }
+        } finally {
+            if (btn) { btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate'; btn.disabled = false; }
         }
     }
 
@@ -1188,6 +1612,8 @@ class HomepageApp {
     initAIChat() {
         this.chatHistory = [];
 
+        this.updateAiModelLabel();
+
         const sendBtn = document.getElementById('aiChatSend');
         const inputEl = document.getElementById('aiChatInput');
         const clearBtn = document.getElementById('aiChatClear');
@@ -1220,18 +1646,17 @@ class HomepageApp {
         // Clear Chat History
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to clear the AI chat history?')) {
-                    this.chatHistory = [];
-                    const container = document.getElementById('aiChatMessages');
-                    if (container) {
-                        container.innerHTML = `
-                            <div class="ai-chat-msg assistant">
-                                <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
-                                <div class="ai-chat-bubble">Hello! I'm your AI assistant powered by Groq. Ask me anything!</div>
-                            </div>
-                        `;
-                    }
+                this.chatHistory = [];
+                const container = document.getElementById('aiChatMessages');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="ai-chat-msg assistant">
+                            <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
+                            <div class="ai-chat-bubble">Chat cleared. Ask me anything!</div>
+                        </div>
+                    `;
                 }
+                window.toast?.('Chat history cleared.', 'info');
             });
         }
     }
@@ -1277,6 +1702,21 @@ class HomepageApp {
 
         // Return the bubble element itself for streaming updates
         return msgDiv.querySelector('.ai-chat-bubble');
+    }
+
+    updateAiModelLabel() {
+        const label = document.getElementById('aiModelLabel');
+        if (!label) return;
+        AIProviders.getAll().then(providers => {
+            const active = providers.filter(p => p.enabled && p.status !== 'failing');
+            if (!active.length) {
+                label.textContent = 'No providers — add a key in Settings';
+            } else if (active.length === 1) {
+                label.textContent = active[0].model;
+            } else {
+                label.textContent = `${active[0].model} +${active.length - 1} more`;
+            }
+        }).catch(() => {});
     }
 
     async searchWeb(query) {
@@ -1327,50 +1767,37 @@ class HomepageApp {
         }
 
         try {
-            if (!this.apiKey) {
-                this.appendChatMsg('assistant', '<span style="color:#ff6b6b;"><i class="fas fa-key" style="margin-right:6px;"></i> Please enter your Groq API Key in Settings to use Ask AI.</span>');
-                setTimeout(() => this.openSettingsModal(), 1500);
-                return;
-            }
-            const GROQ_API_KEY = this.apiKey;
+            // Construct payload with a capped history to prevent oversized requests
+            const historyLimit = 8;
+            const maxContentChars = 2000;
+            const trimmedHistory = this.chatHistory.slice(-historyLimit).map(msg => ({
+                role: msg.role,
+                content: msg.content.length > maxContentChars
+                    ? msg.content.slice(0, maxContentChars) + '...'
+                    : msg.content
+            }));
 
-            // Construct payload: inject seaechContext without mutating chatHistory directly
             const messagesPayload = [
                 { role: 'system', content: 'You are a helpful, concise AI assistant embedded in a 3D browser homepage extension.' },
-                ...this.chatHistory
+                ...trimmedHistory
             ];
 
             if (useWebSearch && searchContext) {
-                // Insert contextual system prompt right before the latest user message
+                const maxSearchChars = 2000;
+                const safeSearchContext = searchContext.length > maxSearchChars
+                    ? searchContext.slice(0, maxSearchChars) + '...'
+                    : searchContext;
                 messagesPayload.splice(messagesPayload.length - 1, 0, {
                     role: 'system',
-                    content: `Web Search Context for the user's latest query:\n${searchContext}\nUse this information to answer the latest question if relevant.`
+                    content: `Web Search Context for the user's latest query:\n${safeSearchContext}\nUse this information to answer the latest question if relevant.`
                 });
             }
 
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: 'openai/gpt-oss-120b',
-                    messages: messagesPayload,
-
-                    temperature: 1,
-                    max_completion_tokens: 8192,
-                    top_p: 1,
-                    stream: true,
-                    reasoning_effort: 'medium',
-                    stop: null
-                })
+            // Route through the failover engine — picks the best available provider
+            const { response } = await AIProviders.aiComplete(messagesPayload, {
+                stream: true, temperature: 1, maxTokens: 1024
             });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData?.error?.message || `API Error ${response.status}`);
-            }
+            this.updateAiModelLabel();
 
             // Stream the response - show raw text during streaming, then format after done
             const reader = response.body.getReader();
@@ -1415,158 +1842,23 @@ class HomepageApp {
         }
     }
 
-    // ========== AI BACKGROUND GENERATOR ==========
-    openBgGenModal() {
-        const modal = document.getElementById('bgGenModal');
-        if (modal) {
-            modal.classList.add('active');
-            setTimeout(() => document.getElementById('bgGenInput')?.focus(), 100);
-        }
-    }
+    // ========== UI WIRING ==========
 
-    initBgGen() {
-        const submitBtn = document.getElementById('bgGenSubmit');
-        const randomBtn = document.getElementById('bgGenRandom');
-        const input = document.getElementById('bgGenInput');
-
-        if (submitBtn) {
-            submitBtn.addEventListener('click', () => {
-                const prompt = input?.value.trim();
-                if (prompt) {
-                    this.closeAllModals();
-                    this.generateAIBackground(prompt);
-                }
+    // Wire the subtle-accents toggle.
+    initElementPacksUI() {
+        // Subtle accents toggle
+        const subtleChk = document.getElementById('wpSubtle');
+        if (subtleChk) {
+            subtleChk.checked = localStorage.getItem('homepage_wp_subtle') === '1';
+            subtleChk.addEventListener('change', () => {
+                const on = subtleChk.checked;
+                localStorage.setItem('homepage_wp_subtle', on ? '1' : '0');
+                document.body.classList.toggle('wp-subtle', on);
             });
-        }
-
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const prompt = input.value.trim();
-                    if (prompt) {
-                        this.closeAllModals();
-                        this.generateAIBackground(prompt);
-                    }
-                }
-            });
-        }
-
-        if (randomBtn) {
-            randomBtn.addEventListener('click', () => {
-                this.closeAllModals();
-                this.generateRandomAIBackground();
-            });
-        }
-    }
-
-    generateRandomAIBackground() {
-        const prompts = [
-            'deep space nebula with purple and blue swirls',
-            'cyberpunk city neon lights rain reflection',
-            'aurora borealis northern lights green and teal',
-            'ocean at sunset orange and pink gradient',
-            'dark forest moonlight mystery',
-            'futuristic holographic interface blue neon',
-            'volcanic eruption orange lava and dark sky',
-            'candy universe pastel pink and lavender',
-            'underwater bioluminescent deep blue',
-            'neon synthwave retro grid purple magenta'
-        ];
-        const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-        this.generateAIBackground(randomPrompt);
-    }
-
-    async generateAIBackground(prompt) {
-        const overlay = document.getElementById('aiLoadingOverlay');
-        const loadingText = document.getElementById('aiLoadingText');
-
-        if (overlay) {
-            overlay.style.display = 'flex';
-            setTimeout(() => overlay.classList.add('active'), 10);
-        }
-
-        try {
-            if (loadingText) loadingText.textContent = `Crafting: "${prompt}"...`;
-
-            if (!this.apiKey) {
-                if (loadingText) loadingText.textContent = 'API Key Required. Opening Settings...';
-                setTimeout(() => {
-                    if (overlay) {
-                        overlay.classList.remove('active');
-                        setTimeout(() => overlay.style.display = 'none', 500);
-                    }
-                    this.openSettingsModal();
-                }, 1500);
-                return;
+            // Restore on startup if static wallpaper is already set
+            if (subtleChk.checked && document.body.classList.contains('wp-static')) {
+                document.body.classList.add('wp-subtle');
             }
-            const GROQ_API_KEY = this.apiKey;
-
-            const systemPrompt = `You are a CSS background generator. The user will describe a visual scene or theme. You must respond with ONLY a valid CSS background property value (e.g., a linear-gradient, radial-gradient, or combination). Use vivid colors suitable for a dark browser homepage. Output ONLY the CSS value, nothing else. Example output: linear-gradient(135deg, #0a0a2e 0%, #1a0a3e 25%, #0d1b2a 50%, #0a2a1a 75%, #1a0a0a 100%)`;
-
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: 'openai/gpt-oss-120b',
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `Create a CSS background for: ${prompt}` }
-                    ],
-                    temperature: 1,
-                    max_completion_tokens: 512,
-                    top_p: 1,
-                    stream: false,
-                    reasoning_effort: 'medium',
-                    stop: null
-                })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData?.error?.message || `API Error ${response.status}`);
-            }
-
-            const result = await response.json();
-            let cssBackground = result.choices?.[0]?.message?.content?.trim() || '';
-
-            // Sanitize: strip any surrounding quotes, backticks, or "background:" prefix
-            cssBackground = cssBackground
-                .replace(/^background\s*:\s*/i, '')
-                .replace(/^[`"']+|[`"']+$/g, '')
-                .replace(/;\s*$/, '')
-                .trim();
-
-            if (!cssBackground) throw new Error('No background generated by AI.');
-
-            if (loadingText) loadingText.textContent = 'Applying Vision...';
-
-            // Apply the AI-generated CSS background
-            document.body.style.background = cssBackground;
-            document.body.style.backgroundSize = 'cover';
-            document.body.style.backgroundPosition = 'center';
-
-            this.aiBackground = cssBackground;
-            this.saveSetting('aiBackground', cssBackground);
-
-            this.enableDeleteMode();
-
-            if (overlay) {
-                overlay.classList.remove('active');
-                setTimeout(() => overlay.style.display = 'none', 500);
-            }
-
-        } catch (error) {
-            console.error('AI Generation Error:', error);
-            if (loadingText) loadingText.textContent = `Error: ${error.message}`;
-            setTimeout(() => {
-                if (overlay) {
-                    overlay.classList.remove('active');
-                    setTimeout(() => overlay.style.display = 'none', 500);
-                }
-            }, 3000);
         }
     }
 
@@ -1640,13 +1932,22 @@ class HomepageApp {
         const chars = 'アイウエオカキクケコサシスセソ0123456789<>/{}[]();=+-*&^%$#@!';
         const charArray = chars.split('');
         const fontSize = 14;
-        const columns = canvas.width / fontSize;
-        const drops = Array(Math.floor(columns)).fill(1);
+        let columns = Math.floor(canvas.width / fontSize);
+        let drops = Array(columns).fill(1);
+
+        window.addEventListener('resize', () => {
+            columns = Math.floor(canvas.width / fontSize);
+            drops = Array(columns).fill(1);
+        });
 
         const template = TEMPLATES[this.currentTemplate];
         const color = template?.colors.primary || '#00ff88';
 
-        const draw = () => {
+        let _lastMatrix = 0;
+        const draw = (ts) => {
+            requestAnimationFrame(draw);
+            if (ts - _lastMatrix < 50) return;
+            _lastMatrix = ts;
             ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = color;
@@ -1662,7 +1963,7 @@ class HomepageApp {
             }
         };
 
-        setInterval(draw, 50);
+        requestAnimationFrame(draw);
     }
 
     // Particles
@@ -1703,7 +2004,12 @@ class HomepageApp {
 
     // Parallax
     initParallax() {
+        let _lastMouse = 0;
         document.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            if (now - _lastMouse < 16) return;
+            _lastMouse = now;
+
             const x = (e.clientX / window.innerWidth - 0.5) * 25;
             const y = (e.clientY / window.innerHeight - 0.5) * 25;
 
@@ -1721,12 +2027,35 @@ class HomepageApp {
     // Keyboard Shortcuts
     initKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
-            if (e.key === '/' && document.activeElement !== document.getElementById('searchInput')) {
+            const active = document.activeElement;
+            const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+
+            if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && !isTyping) {
                 e.preventDefault();
                 document.getElementById('searchInput')?.focus();
+                return;
             }
             if (e.key === 'Escape') {
                 this.closeAllModals();
+                return;
+            }
+            if (isTyping) return;
+
+            if (e.key === 'T' || e.key === 't') { this.openTemplateModal(); return; }
+            if (e.key === 'S' || e.key === 's') { this.openSettingsModal(); return; }
+            if (e.key === 'A' || e.key === 'a') { this.openAIChatModal(); return; }
+            if (e.key === 'C' || e.key === 'c') {
+                document.getElementById('customizeBtn')?.click();
+                return;
+            }
+            if (e.key === '?') {
+                const m = document.getElementById('shortcutsModal');
+                if (m) m.classList.toggle('active');
+                return;
+            }
+            if (e.key === 'F' || e.key === 'f') {
+                window.Feedback?.toggle();
+                return;
             }
         });
     }
@@ -1740,32 +2069,727 @@ class HomepageApp {
             nameEl.textContent = name;
             nameEl.setAttribute('data-text', name);
         }
+        this.refreshGreeting();
+    }
+
+    // ── Weather + greeting ───────────────────────────────────────────────
+    initWeather() {
+        // Restore saved unit preference (default °C)
+        this._tempUnit = localStorage.getItem('homepage_temp_unit') || 'C';
+
+        this.refreshGreeting();
+        // Try cache first (30-min TTL)
+        try {
+            const cached = JSON.parse(localStorage.getItem('homepage_weather_cache') || 'null');
+            if (cached && (Date.now() - cached.ts) < 30 * 60 * 1000) {
+                this.refreshGreeting(cached.tempC, cached.icon);
+                return;
+            }
+        } catch {}
+
+        if (!navigator.geolocation) {
+            this._showGeoRetry();
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            async pos => {
+                try {
+                    const { latitude: lat, longitude: lon } = pos.coords;
+                    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto`;
+                    const res = await fetch(url);
+                    const d   = await res.json();
+                    const tempC = Math.round(d.current.temperature_2m);
+                    const icon = WMO_ICONS[d.current.weather_code] || '🌡️';
+                    try { localStorage.setItem('homepage_weather_cache', JSON.stringify({ tempC, icon, ts: Date.now() })); } catch {}
+                    this.refreshGreeting(tempC, icon);
+                } catch {}
+            },
+            () => this._showGeoRetry()
+        );
+    }
+
+    _toDisplayTemp(tempC) {
+        if (this._tempUnit === 'F') return `${Math.round(tempC * 9 / 5 + 32)}°F`;
+        return `${tempC}°C`;
+    }
+
+    _showGeoRetry() {
+        const el = document.getElementById('weatherGreeting');
+        if (!el) return;
+        el.innerHTML = `<span class="geo-retry-btn" id="geoRetryBtn" style="cursor:pointer;opacity:0.7;font-size:0.85rem;">📍 Enable location for weather →</span>`;
+        el.style.opacity = '1';
+        document.getElementById('geoRetryBtn')?.addEventListener('click', () => {
+            localStorage.removeItem('homepage_weather_cache');
+            this.initWeather();
+        });
+    }
+
+    refreshGreeting(tempC, icon) {
+        const el = document.getElementById('weatherGreeting');
+        if (!el) return;
+        const h      = new Date().getHours();
+        const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+        const name   = this.userName && this.userName !== 'YOUR NAME' ? `, ${this.userName}` : '';
+        let html = `Good ${period}${name}`;
+        if (tempC !== undefined && icon !== undefined) {
+            this._lastTempC = tempC;
+            this._lastTempIcon = icon;
+            const display = this._toDisplayTemp(tempC);
+            html += `&ensp;<span class="weather-badge" id="weatherBadge" title="Click to toggle °C / °F" style="cursor:pointer;">${icon} ${display}</span>`;
+        }
+        el.innerHTML    = html;
+        el.style.opacity = '1';
+
+        // Toggle °C/°F on click
+        const badge = document.getElementById('weatherBadge');
+        if (badge) {
+            badge.addEventListener('click', () => {
+                this._tempUnit = this._tempUnit === 'C' ? 'F' : 'C';
+                localStorage.setItem('homepage_temp_unit', this._tempUnit);
+                const newDisplay = this._toDisplayTemp(this._lastTempC);
+                badge.textContent = `${this._lastTempIcon} ${newDisplay}`;
+                window.toast?.(`Switched to °${this._tempUnit}`, 'info', 1500);
+            });
+        }
+    }
+
+    // ── Wallpaper controls ───────────────────────────────────────────────
+    initWallpaperControls() {
+        const picker     = document.getElementById('wallpaperFilePicker');
+        const pickerBtn  = document.getElementById('wallpaperPickerBtn');
+        const clearBtn   = document.getElementById('wallpaperClearBtn');
+        const blurSlider = document.getElementById('wpBlur');
+        const dimSlider  = document.getElementById('wpDim');
+        const blendSel   = document.getElementById('wpBlend');
+        const parChk     = document.getElementById('wpParallax');
+        const applyBtn   = document.getElementById('wpApplyTheme');
+
+        if (pickerBtn && picker) {
+            pickerBtn.addEventListener('click', () => picker.click());
+            picker.addEventListener('change', async e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                await Wallpaper.setFromFile(file);
+                this._updateWpThumbnail();
+                picker.value = '';
+                window.toast?.('Wallpaper set!', 'success', 2000);
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async () => {
+                await Wallpaper.clear();
+                this._updateWpThumbnail();
+                window.toast?.('Wallpaper cleared.', 'info', 2000);
+            });
+        }
+
+        const readSliders = () => ({
+            blur:  parseInt(blurSlider?.value ?? 0),
+            dim:   parseInt(dimSlider?.value  ?? 30) / 100,
+            blend: blendSel?.value || 'normal'
+        });
+
+        if (blurSlider) {
+            blurSlider.addEventListener('input', () => {
+                const el = document.getElementById('blurVal');
+                if (el) el.textContent = `${blurSlider.value}px`;
+                Wallpaper.applySettings(readSliders());
+            });
+        }
+
+        if (dimSlider) {
+            dimSlider.addEventListener('input', () => {
+                const el = document.getElementById('dimVal');
+                if (el) el.textContent = `${dimSlider.value}%`;
+                Wallpaper.applySettings(readSliders());
+            });
+        }
+
+        if (blendSel) {
+            blendSel.addEventListener('change', () => Wallpaper.applySettings(readSliders()));
+        }
+
+        if (parChk) {
+            parChk.addEventListener('change', () => Wallpaper.enableParallax(parChk.checked));
+        }
+
+        if (applyBtn) {
+            applyBtn.addEventListener('click', async () => {
+                const original = applyBtn.innerHTML;
+                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Extracting...';
+                applyBtn.disabled  = true;
+                const colors = await Wallpaper.extractPalette();
+                applyBtn.disabled  = false;
+                if (!colors) {
+                    applyBtn.innerHTML = '⚠ No image set or video not supported';
+                    setTimeout(() => { applyBtn.innerHTML = original; }, 2500);
+                    return;
+                }
+                Wallpaper.applyPaletteToTheme(colors);
+                applyBtn.innerHTML = '<i class="fas fa-check"></i> Colors applied!';
+                setTimeout(() => { applyBtn.innerHTML = original; }, 2000);
+            });
+        }
+    }
+
+    // ── Import / Export ──────────────────────────────────────────────────
+    initImportExport() {
+        const exportBtn     = document.getElementById('exportSettingsBtn');
+        const importBtn     = document.getElementById('importSettingsBtn');
+        const importPicker  = document.getElementById('importFilePicker');
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportSettings());
+        }
+        if (importBtn && importPicker) {
+            importBtn.addEventListener('click', () => importPicker.click());
+            importPicker.addEventListener('change', async e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                await this.importSettings(file);
+                importPicker.value = '';
+            });
+        }
+    }
+
+    async exportSettings() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('homepage_')) data[k] = localStorage.getItem(k);
+        }
+
+        const includeWallpaper = document.getElementById('exportIncludeWallpaper')?.checked;
+        if (includeWallpaper) {
+            try {
+                const blob = await Wallpaper.getBlob();
+                if (blob) {
+                    data['__wallpaper_blob__'] = await this._blobToBase64(blob);
+                    data['__wallpaper_type__'] = blob.type;
+                }
+            } catch {}
+        }
+
+        const json = JSON.stringify(data, null, 2);
+        const url  = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        Object.assign(document.createElement('a'), { href: url, download: '3d-parallax-settings.json' }).click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        window.toast?.('Settings exported!', 'success', 2000);
+    }
+
+    async importSettings(file) {
+        let data;
+        try { data = JSON.parse(await file.text()); }
+        catch { window.toast?.('Could not parse settings file — invalid JSON.', 'error'); return; }
+
+        if (!Object.keys(data).some(k => k.startsWith('homepage_'))) {
+            window.toast?.("This file doesn't look like a 3D Homepage settings export.", 'error');
+            return;
+        }
+
+        for (const [k, v] of Object.entries(data)) {
+            if (k.startsWith('homepage_') && typeof v === 'string') {
+                localStorage.setItem(k, v);
+            }
+        }
+
+        if (data['__wallpaper_blob__'] && data['__wallpaper_type__']) {
+            try {
+                const blob = this._base64ToBlob(data['__wallpaper_blob__'], data['__wallpaper_type__']);
+                await Wallpaper.setFromFile(blob);
+            } catch {}
+        }
+
+        window.toast?.('Settings imported — reloading…', 'success', 2000);
+        setTimeout(() => location.reload(), 600);
+    }
+
+    _blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload  = () => resolve(r.result.split(',')[1]);
+            r.onerror = reject;
+            r.readAsDataURL(blob);
+        });
+    }
+
+    _base64ToBlob(b64, type) {
+        const bytes = atob(b64);
+        const arr   = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+        return new Blob([arr], { type });
+    }
+
+    // ── AI Providers UI ──────────────────────────────────────────────────
+    initAIProvidersUI() {
+        // Re-render whenever the data changes (e.g. after test / delete)
+        document.addEventListener('ai-providers-updated', () => {
+            if (document.getElementById('settingsModal')?.classList.contains('active')) {
+                this.renderAIProviders();
+            }
+            this.updateAiModelLabel();
+        });
+
+        // ── Snippet panel toggle ──────────────────────────────────────────
+        document.getElementById('showSnippetBtn')?.addEventListener('click', () => {
+            const p = document.getElementById('snippetPanel');
+            if (!p) return;
+            const vis = p.style.display !== 'none';
+            p.style.display = vis ? 'none' : 'block';
+            document.getElementById('addProvForm').style.display = 'none'; // close other panel
+            if (!vis) document.getElementById('snippetInput')?.focus();
+        });
+
+        // ── Parse snippet ─────────────────────────────────────────────────
+        document.getElementById('parseSnippetBtn')?.addEventListener('click', () => {
+            const raw  = document.getElementById('snippetInput')?.value || '';
+            const note = document.getElementById('snippetNote');
+            const parsed = AIProviders.parseSnippet(raw);
+
+            if (!parsed.model && !parsed.apiKey && !parsed.baseUrl) {
+                if (note) { note.textContent = "Couldn't detect a model — fill the form manually."; note.className = 'snippet-note err'; }
+                return;
+            }
+
+            // Open the add form and pre-fill
+            const form = document.getElementById('addProvForm');
+            if (form) form.style.display = 'block';
+            if (parsed.model)   { const el = document.getElementById('provModel');   if (el) el.value = parsed.model;   }
+            if (parsed.baseUrl) { const el = document.getElementById('provBaseUrl'); if (el) el.value = parsed.baseUrl; }
+
+            if (parsed.apiKey) {
+                const el = document.getElementById('provKey');
+                if (el) el.value = parsed.apiKey;
+                if (note) { note.textContent = 'Model & key detected — review and save.'; note.className = 'snippet-note ok'; }
+            } else {
+                if (note) { note.textContent = 'Model detected — paste your API key to finish.'; note.className = 'snippet-note warn'; }
+            }
+
+            // Try to fetch model suggestions with the detected key
+            const key = parsed.apiKey || '';
+            const base = parsed.baseUrl || 'https://api.groq.com/openai/v1';
+            if (key) this._tryFetchModelSuggestions(base, key);
+        });
+
+        // ── Add form toggle ───────────────────────────────────────────────
+        document.getElementById('showAddFormBtn')?.addEventListener('click', () => {
+            const f = document.getElementById('addProvForm');
+            if (!f) return;
+            const vis = f.style.display !== 'none';
+            f.style.display = vis ? 'none' : 'block';
+            document.getElementById('snippetPanel').style.display = 'none';
+            if (!vis) {
+                // Clear form on open
+                ['provName','provKey','provModel','provPriority','provBaseUrl'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = id === 'provPriority' ? '0' : id === 'provBaseUrl' ? 'https://api.groq.com/openai/v1' : '';
+                });
+                document.getElementById('provKeyWarn').style.display = 'none';
+                document.getElementById('provName')?.focus();
+                // Try to fetch model suggestions from first working provider
+                AIProviders.getAll().then(providers => {
+                    const wp = providers.find(p => p.status === 'working' && p.enabled);
+                    if (wp) this._tryFetchModelSuggestions(wp.baseUrl, wp.apiKey);
+                }).catch(() => {});
+            }
+        });
+
+        // ── API key warning on blur ───────────────────────────────────────
+        document.getElementById('provKey')?.addEventListener('blur', () => {
+            const val  = document.getElementById('provKey')?.value.trim() || '';
+            const warn = document.getElementById('provKeyWarn');
+            const base = document.getElementById('provBaseUrl')?.value.trim() || '';
+            if (!warn) return;
+            if (val && !val.startsWith('gsk_') && !val.startsWith('sk-') && !base) {
+                warn.textContent = "Key doesn't start with 'gsk_' — make sure the Base URL is set for non-Groq providers.";
+                warn.style.display = 'block';
+            } else {
+                warn.style.display = 'none';
+            }
+        });
+
+        // ── Save provider ─────────────────────────────────────────────────
+        document.getElementById('saveProvBtn')?.addEventListener('click', async () => {
+            const name     = (document.getElementById('provName')?.value.trim()) || 'New Provider';
+            const apiKey   = (document.getElementById('provKey')?.value.trim()) || '';
+            const model    = (document.getElementById('provModel')?.value.trim()) || 'meta-llama/llama-4-scout-17b-16e-instruct';
+            const priority = parseInt(document.getElementById('provPriority')?.value ?? '0') || 0;
+            const baseUrl  = (document.getElementById('provBaseUrl')?.value.trim()) || 'https://api.groq.com/openai/v1';
+
+            if (!apiKey) { window.toast?.('Please enter an API key.', 'error'); return; }
+
+            await AIProviders.add({ name, apiKey, model, priority, baseUrl, status: 'untested' });
+            document.getElementById('addProvForm').style.display = 'none';
+            this.renderAIProviders();
+            this.updateAiModelLabel();
+            window.toast?.(`Provider "${this._esc(name)}" saved.`, 'success', 2000);
+        });
+
+        // ── Cancel add form ───────────────────────────────────────────────
+        document.getElementById('cancelProvBtn')?.addEventListener('click', () => {
+            document.getElementById('addProvForm').style.display = 'none';
+        });
+
+        // ── Event delegation for card actions ─────────────────────────────
+        document.getElementById('providersList')?.addEventListener('click', async e => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const id     = btn.dataset.id;
+            const action = btn.dataset.action;
+
+            if (action === 'test') {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.disabled  = true;
+                await AIProviders.update(id, { status: 'testing' });
+                this.renderAIProviders();
+                const res = await AIProviders.testProvider(id);
+                btn.disabled = false;
+                this.renderAIProviders();
+                if (res.ok) {
+                    window.toast?.('Provider test passed!', 'success', 2000);
+                } else {
+                    window.toast?.(`Provider test failed: ${res.error || 'unknown error'}`, 'error', 4000);
+                }
+            }
+
+            if (action === 'delete') {
+                await AIProviders.remove(id);
+                this.renderAIProviders();
+                this.updateAiModelLabel();
+                window.toast?.('Provider deleted.', 'info');
+            }
+
+            if (action === 'reveal') {
+                const span = document.getElementById(`key-display-${id}`);
+                if (!span) return;
+                const isHidden = span.dataset.hidden !== 'false';
+                const list = await AIProviders.getAll();
+                const prov = list.find(p => p.id === id);
+                if (!prov) return;
+                span.textContent = isHidden ? prov.apiKey : AIProviders.maskKey(prov.apiKey);
+                span.dataset.hidden = isHidden ? 'false' : 'true';
+                btn.innerHTML = isHidden ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+            }
+        });
+
+        // Toggle enabled state via change event
+        document.getElementById('providersList')?.addEventListener('change', async e => {
+            const chk = e.target.closest('[data-action="toggle"]');
+            if (!chk) return;
+            await AIProviders.update(chk.dataset.id, { enabled: chk.checked });
+            this.updateAiModelLabel();
+        });
+    }
+
+    async renderAIProviders() {
+        const container = document.getElementById('providersList');
+        if (!container) return;
+
+        let providers = [];
+        try { providers = await AIProviders.getAll(); } catch { return; }
+
+        if (!providers.length) {
+            container.innerHTML = '<div class="no-providers-msg"><i class="fas fa-plus-circle" style="margin-right:6px;opacity:0.5;"></i>No providers yet — click "Add Key" to get started.</div>';
+            return;
+        }
+
+        container.innerHTML = providers.map(p => {
+            const masked = AIProviders.maskKey(p.apiKey);
+            const reqCnt = AIProviders.reqTodayDisplay(p);
+            const statusDot = { working:'●', failing:'●', untested:'○', cooldown:'⏱', testing:'…' }[p.status] || '○';
+
+            return `
+            <div class="provider-card" data-id="${p.id}">
+                <div class="provider-card-top">
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                        <span class="provider-name">${this._esc(p.name)}</span>
+                        <span class="status-badge status-${p.status}">${statusDot} ${p.status}</span>
+                    </div>
+                    <div class="provider-card-actions">
+                        <button class="btn btn-icon btn-secondary btn-icon-accent"
+                                data-action="test" data-id="${p.id}" title="Test key">
+                            <i class="fas fa-vial"></i>
+                        </button>
+                        <label class="ctrl-toggle" title="Enabled">
+                            <input type="checkbox" data-action="toggle"
+                                   data-id="${p.id}" ${p.enabled ? 'checked' : ''}>
+                            <span class="ctrl-toggle-track"></span>
+                        </label>
+                        <button class="btn btn-icon btn-secondary btn-icon-danger"
+                                data-action="delete" data-id="${p.id}" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="provider-key-row">
+                    <span class="masked-key" id="key-display-${p.id}"
+                          data-hidden="true">${masked}</span>
+                    <button class="btn btn-icon btn-secondary"
+                            data-action="reveal" data-id="${p.id}" title="Reveal / hide key">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="provider-meta">
+                    <span>${this._esc(p.model)}</span>
+                    <span>Priority ${p.priority}</span>
+                    <span>${reqCnt} req today</span>
+                    ${p.lastError ? `<span class="err-text" style="flex-basis:100%;color:#ff7070;"><i class="fas fa-exclamation-circle"></i> ${this._esc(p.lastError)}</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Attempt to fetch model list and populate the datalist
+    async _tryFetchModelSuggestions(baseUrl, apiKey) {
+        try {
+            const models = await AIProviders.fetchModels(baseUrl, apiKey);
+            const dl = document.getElementById('modelSuggest');
+            if (!dl || !models?.length) return;
+            dl.innerHTML = models.map(m => `<option value="${this._esc(m)}">`).join('');
+        } catch {}
+    }
+
+    // ── Wallpaper thumbnail (settings preview) ───────────────────────────
+    async _updateWpThumbnail() {
+        const empty     = document.getElementById('wpThumbEmpty');
+        const thumbWrap = document.getElementById('wpThumb');
+        const img       = document.getElementById('wpThumbImg');
+        const videoIcon = document.getElementById('wpThumbVideo');
+        if (!empty || !thumbWrap) return;
+
+        let blob = null;
+        try { blob = await Wallpaper.getBlob(); } catch {}
+
+        if (!blob) {
+            empty.style.display     = '';
+            thumbWrap.style.display = 'none';
+            if (img) img.src        = '';
+            return;
+        }
+
+        empty.style.display     = 'none';
+        thumbWrap.style.display = '';
+
+        if (blob.type.startsWith('video/')) {
+            if (img)       img.style.display       = 'none';
+            if (videoIcon) videoIcon.style.display = '';
+        } else {
+            if (videoIcon) videoIcon.style.display = 'none';
+            if (img) {
+                img.style.display = '';
+                const url = URL.createObjectURL(blob);
+                img.src = url;
+                img.onload = () => URL.revokeObjectURL(url);
+            }
+        }
+    }
+
+    // ── Customization Panel (slide-up) ───────────────────────────────────────
+    _buildCustomizationPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'customizationPanel';
+        panel.className = 'customizationPanel';
+
+        const EFFECTS = [
+            { id: 'matrix',    label: 'Matrix Rain',     key: 'homepage_matrixEnabled',   default: true },
+            { id: 'particles', label: 'Particles',       key: 'homepage_particlesEnabled', default: true },
+            { id: 'aurora',    label: 'Aurora Glow',     key: 'homepage_auroraEnabled',    default: true },
+            { id: 'cube3d',    label: '3D Cube',         key: 'homepage_cube3dEnabled',    default: true },
+            { id: 'typewriter',label: 'Typewriter',      key: 'homepage_headline_typewriter', default: true },
+        ];
+
+        const rows = EFFECTS.map(fx => {
+            const val = localStorage.getItem(fx.key);
+            const checked = val === null ? fx.default : val !== '0';
+            return `<div class="customize-panel-row">
+                <label for="cp-${fx.id}">${fx.label}</label>
+                <label class="ctrl-toggle">
+                    <input type="checkbox" id="cp-${fx.id}" data-key="${fx.key}" ${checked ? 'checked' : ''}>
+                    <span class="ctrl-toggle-track"></span>
+                </label>
+            </div>`;
+        }).join('');
+
+        const SIZE_SLIDERS = [
+            { label: 'Clock size', id: 'cpClockSize', lsKey: 'homepage_custom_clock_size', min: 2, max: 10, step: 0.1, unit: 'rem', cssVar: '--custom-clock-size', suffix: 'rem' },
+            { label: 'Name size', id: 'cpNameSize',   lsKey: 'homepage_custom_name_size',  min: 1, max: 5,  step: 0.1, unit: 'rem', cssVar: '--custom-name-size',  suffix: 'rem' },
+            { label: 'Headline size', id: 'cpHeadlineSize', lsKey: 'homepage_custom_headline_size', min: 1, max: 4, step: 0.1, unit: 'rem', cssVar: '--custom-headline-size', suffix: 'rem' },
+            { label: 'Search height', id: 'cpSearchH', lsKey: 'homepage_custom_search_height', min: 36, max: 72, step: 2, unit: 'px', cssVar: '--custom-search-height', suffix: 'px' },
+            { label: 'Search width', id: 'cpSearchW',  lsKey: 'homepage_custom_search_width', min: 280, max: 900, step: 10, unit: 'px', cssVar: '--custom-search-width', suffix: 'px' },
+            { label: 'Search radius', id: 'cpSearchR', lsKey: 'homepage_custom_search_radius', min: 0, max: 36, step: 1, unit: 'px', cssVar: '--custom-search-radius', suffix: 'px' },
+            { label: 'Weather size', id: 'cpWeatherSize', lsKey: 'homepage_custom_weather_size', min: 0.7, max: 2, step: 0.05, unit: 'rem', cssVar: '--custom-weather-size', suffix: 'rem' },
+            { label: '3D scene scale', id: 'cpSceneScale', lsKey: 'homepage_custom_scene_scale', min: 50, max: 150, step: 5, unit: '%', cssVar: '--custom-scene-scale', suffix: '' },
+        ];
+
+        const sliderRows = SIZE_SLIDERS.map(s => {
+            const saved = localStorage.getItem(s.lsKey);
+            const defVal = saved !== null ? parseFloat(saved) : (s.min + (s.max - s.min) / 2);
+            const displayVal = s.unit === '%' ? (saved || '100') + '%' : (saved || defVal) + s.unit;
+            return `<div class="custom-slider-row">
+                <label class="custom-slider-label">${s.label}</label>
+                <div class="custom-slider-wrap">
+                    <input type="range" class="custom-slider cp-size-slider" id="${s.id}"
+                           min="${s.min}" max="${s.max}" step="${s.step}" value="${saved || defVal}"
+                           data-ls-key="${s.lsKey}" data-css-var="${s.cssVar}" data-unit="${s.unit}" data-suffix="${s.suffix}">
+                    <span class="custom-slider-value" id="${s.id}Val">${displayVal}</span>
+                </div>
+            </div>`;
+        }).join('');
+
+        panel.innerHTML = `
+            <div class="customize-panel-header">
+                <span><i class="fas fa-wand-magic-sparkles"></i> Customize</span>
+                <button class="customize-panel-close" id="cpCloseBtn" title="Close">✕</button>
+            </div>
+            ${rows}
+            <div class="custom-slider-section-label">Element Sizes</div>
+            ${sliderRows}
+        `;
+
+        // Bind toggles
+        panel.querySelectorAll('input[type=checkbox][data-key]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                localStorage.setItem(cb.dataset.key, cb.checked ? '1' : '0');
+                // Live apply for matrix
+                if (cb.id === 'cp-matrix') {
+                    const canvas = document.getElementById('matrixCanvas');
+                    if (canvas) canvas.style.display = cb.checked ? '' : 'none';
+                }
+                // Live apply for aurora
+                if (cb.id === 'cp-aurora') {
+                    const el = document.querySelector('.aurora');
+                    if (el) el.style.opacity = cb.checked ? '' : '0';
+                }
+                // Live apply for particles
+                if (cb.id === 'cp-particles') {
+                    const el = document.querySelector('.particles-container, canvas.particles');
+                    if (el) el.style.display = cb.checked ? '' : 'none';
+                }
+            });
+        });
+
+        // Bind size sliders
+        panel.querySelectorAll('.cp-size-slider').forEach(slider => {
+            const valEl = document.getElementById(slider.id + 'Val');
+            slider.addEventListener('input', () => {
+                const v = slider.value;
+                const unit = slider.dataset.unit;
+                const suffix = slider.dataset.suffix;
+                const cssVar = slider.dataset.cssVar;
+                const lsKey = slider.dataset.lsKey;
+                const display = unit === '%' ? v + '%' : v + unit;
+                if (valEl) valEl.textContent = display;
+                localStorage.setItem(lsKey, v);
+                document.documentElement.style.setProperty(cssVar, v + suffix + (unit !== '%' && suffix === '' ? '' : ''));
+                // For scene scale, special case: value stored as percent number, CSS var expects percent number
+                if (cssVar === '--custom-scene-scale') {
+                    document.documentElement.style.setProperty(cssVar, v);
+                }
+            });
+        });
+
+        panel.querySelector('#cpCloseBtn')?.addEventListener('click', () => {
+            panel.classList.remove('open');
+        });
+
+        return panel;
+    }
+
+    // Safe HTML escaping
+    _esc(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
     }
 }
 
-// Initialize app when DOM is ready
+// ── Global Toast Notification System ─────────────────────────────────────────
+window.toast = (msg, type = 'info', duration = 3000) => {
+    const ICONS = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    const COLORS = { success: '#00ff88', error: '#ff4d4d', info: '#00d4ff', warning: '#f7c948' };
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        document.body.appendChild(container);
+    }
+    const t = document.createElement('div');
+    const color = COLORS[type] || COLORS.info;
+    t.style.cssText = `pointer-events:all;display:flex;align-items:center;gap:10px;min-width:260px;max-width:380px;
+        padding:12px 14px;border-radius:10px;backdrop-filter:blur(12px);
+        background:rgba(13,17,23,0.92);border-left:3px solid ${color};
+        box-shadow:0 4px 24px rgba(0,0,0,0.4);transform:translateX(120%);
+        transition:transform 0.3s ease;font-family:Inter,sans-serif;font-size:0.875rem;color:rgba(255,255,255,0.9);position:relative;overflow:hidden;`;
+    t.innerHTML = `<i class="fas ${ICONS[type]||ICONS.info}" style="color:${color};flex-shrink:0;"></i>
+        <span style="flex:1;">${String(msg).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+        <button style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:1rem;padding:0;line-height:1;" onclick="this.closest('div[style]').remove()">✕</button>
+        <div class="toast-bar" style="position:absolute;bottom:0;left:0;height:2px;background:${color};width:100%;transform-origin:left;animation:toastBar ${duration}ms linear forwards;"></div>`;
+    if (!document.getElementById('toast-keyframes')) {
+        const s = document.createElement('style');
+        s.id = 'toast-keyframes';
+        s.textContent = '@keyframes toastBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}';
+        document.head.appendChild(s);
+    }
+    container.appendChild(t);
+    requestAnimationFrame(() => requestAnimationFrame(() => { t.style.transform = 'translateX(0)'; }));
+    const remove = () => { t.style.transform = 'translateX(120%)'; setTimeout(() => t.remove(), 320); };
+    const timer = setTimeout(remove, duration);
+    t.querySelector('button').addEventListener('click', () => { clearTimeout(timer); remove(); });
+};
+
+// ── Initialize app when DOM is ready ─────────────────────────────────────────
 let app;
 document.addEventListener('DOMContentLoaded', () => {
+    // Fade out loading screen
+    const ls = document.getElementById('loadingScreen');
+    if (ls) {
+        ls.style.transition = 'opacity 0.4s';
+        ls.style.opacity = '0';
+        ls.style.pointerEvents = 'none';
+        setTimeout(() => { ls.style.display = 'none'; }, 420);
+    }
+
     app = new HomepageApp();
+    window.app = app;   // expose for Setup / Makeover / Sharing / Widget modules
+    // Backbone modules — order matters (Setup first, then features that use it)
+    try { window.Ambient && Ambient.init(); } catch (e) { console.warn('Ambient init', e); }
+    try { window.Setup && Setup.init(); } catch (e) { console.warn('Setup init', e); }
+    try { window.WidgetCanvas && WidgetCanvas.init(); } catch (e) { console.warn('WidgetCanvas init', e); }
+
+    // Defer non-critical modules with requestIdleCallback
+    const defer = (fn) => {
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(fn);
+        else setTimeout(fn, 0);
+    };
+    defer(() => { try { window.Makeover && Makeover.init(); } catch (e) { console.warn('Makeover init', e); } });
+    defer(() => { try { window.Sharing && Sharing.init(); } catch (e) { console.warn('Sharing init', e); } });
+    defer(() => { try { window.Feedback && Feedback.init(); } catch (e) { console.warn('Feedback init', e); } });
+
+    // Auto-open feedback modal if page was loaded via #feedback hash (from popup)
+    if (location.hash === '#feedback') {
+        setTimeout(() => window.Feedback?.open(), 800);
+        history.replaceState(null, '', location.pathname);
+    }
+
+    // Wire models.json into the model datalist
+    fetch('models.json').then(r => r.json()).then(models => {
+        const dl = document.getElementById('modelSuggest');
+        if (dl && Array.isArray(models)) {
+            dl.innerHTML = models.map(m => `<option value="${m}">`).join('');
+        }
+    }).catch(() => {});
 });
 
-// Add this to the END of your existing script.js file
-// This ensures interactions are re-initialized after template changes
-
-// Store reference to original applyTemplate method
-const originalApplyTemplate = HomepageApp.prototype.applyTemplate;
-
-// Override applyTemplate to re-initialize interactions
+// Dispatch templateChanged event after applyTemplate so interactions.js can listen
+const _origApplyTemplate = HomepageApp.prototype.applyTemplate;
 HomepageApp.prototype.applyTemplate = function (templateId) {
-    // Call original method
-    originalApplyTemplate.call(this, templateId);
-
-    // Re-initialize interactions after template objects are created
-    setTimeout(() => {
-        if (window.interactive3DSystem) {
-            console.log('Re-initializing interactions after template change...');
-            window.interactive3DSystem.makeObjectsInteractive();
-        }
-    }, 2000);
+    _origApplyTemplate.call(this, templateId);
+    try {
+        document.dispatchEvent(new CustomEvent('templateChanged', { detail: { templateId } }));
+    } catch {}
 };
 

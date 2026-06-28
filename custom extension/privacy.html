@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>3D Parallax — Privacy Policy</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0f;
+      color: rgba(255,255,255,0.85);
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      line-height: 1.75;
+    }
+    h1 { color: #00ff88; font-size: 2rem; margin-bottom: 4px; }
+    h2 { color: #00d4ff; font-size: 1.1rem; margin-top: 36px; margin-bottom: 8px; }
+    p, li { color: rgba(255,255,255,0.72); font-size: 0.95rem; }
+    ul { padding-left: 20px; }
+    a { color: #00ff88; }
+    .updated { font-size: 0.8rem; color: rgba(255,255,255,0.35); margin-top: 4px; }
+    hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: 2026-06-27 &nbsp;·&nbsp; Extension version: 2.1.0</p>
+
+  <hr>
+
+  <h2>1. What data we collect</h2>
+  <p><strong>3D Parallax New Tab</strong> does not collect, transmit, or share any personal data with us or any third party.</p>
+  <p>All settings (your name, theme preference, quick links, headline lines, wallpaper image, AI provider keys) are stored <strong>locally on your device only</strong>, using <code>chrome.storage.local</code> and <code>localStorage</code>. This data never leaves your browser.</p>
+
+  <h2>2. Permissions we use — and why</h2>
+  <ul>
+    <li><strong>storage / unlimitedStorage</strong> — saves your settings and wallpaper blob locally.</li>
+    <li><strong>Geolocation</strong> (optional, browser-level prompt) — fetches weather from the public Open-Meteo API using your coordinates. Your coordinates are sent directly from your browser to Open-Meteo; we do not see or store them.</li>
+  </ul>
+
+  <h2>3. Third-party network requests</h2>
+  <p>The extension may make the following outbound requests on your behalf:</p>
+  <ul>
+    <li><strong>Open-Meteo</strong> (<code>api.open-meteo.com</code>) — free, open-source weather API. No account or API key required. See their <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">terms</a>.</li>
+    <li><strong>Groq API</strong> (<code>api.groq.com</code>) — used for the AI chat feature only when you provide your own API key and send a message. Your API key is stored locally and sent only to Groq's servers.</li>
+    <li><strong>DuckDuckGo Instant Answer API</strong> — used for the AI web-search feature when toggled on.</li>
+  </ul>
+  <p>No tracking pixels, analytics SDKs, or advertising networks are included.</p>
+
+  <h2>4. AI provider keys</h2>
+  <p>If you add a Groq API key (or any OpenAI-compatible key), it is stored in <code>chrome.storage.local</code> and never transmitted anywhere except directly to the provider's API endpoint when you send a chat message. You can delete any stored key at any time from the Settings panel inside the extension.</p>
+
+  <h2>5. Children's privacy</h2>
+  <p>This extension is not directed at children under 13. We do not knowingly collect information from children.</p>
+
+  <h2>6. Changes to this policy</h2>
+  <p>If we make material changes we will update the "Last updated" date above and bump the extension version. Continued use after an update constitutes acceptance of the revised policy.</p>
+
+  <h2>7. Contact</h2>
+  <p>For questions or concerns, open an issue on the <a href="https://github.com/YOUR_USERNAME/3d-parallax" target="_blank" rel="noopener">GitHub repository</a>.</p>
+
+  <hr>
+  <p style="font-size:0.8rem;color:rgba(255,255,255,0.25);text-align:center;">3D Parallax New Tab &nbsp;·&nbsp; v2.1.0 &nbsp;·&nbsp; Developed by Muhammad Ali Mehdi</p>
+</body>
+</html>

@@ -4,15 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Homepage | Developed by Muhammad Ali Mehdi</title>
+    <title>3D Parallax | Developed by Muhammad Ali Mehdi</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Fira+Code:wght@400;600&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <script>
+      (function() {
+        var clockSize = localStorage.getItem('homepage_custom_clock_size');
+        if (clockSize) document.documentElement.style.setProperty('--custom-clock-size', clockSize + 'rem');
+        var nameSize = localStorage.getItem('homepage_custom_name_size');
+        if (nameSize) document.documentElement.style.setProperty('--custom-name-size', nameSize + 'rem');
+        var headlineSize = localStorage.getItem('homepage_custom_headline_size');
+        if (headlineSize) document.documentElement.style.setProperty('--custom-headline-size', headlineSize + 'rem');
+        var searchH = localStorage.getItem('homepage_custom_search_height');
+        if (searchH) document.documentElement.style.setProperty('--custom-search-height', searchH + 'px');
+        var searchW = localStorage.getItem('homepage_custom_search_width');
+        if (searchW) document.documentElement.style.setProperty('--custom-search-width', searchW + 'px');
+        var searchR = localStorage.getItem('homepage_custom_search_radius');
+        if (searchR) document.documentElement.style.setProperty('--custom-search-radius', searchR + 'px');
+        var weatherSize = localStorage.getItem('homepage_custom_weather_size');
+        if (weatherSize) document.documentElement.style.setProperty('--custom-weather-size', weatherSize + 'rem');
+        var sceneScale = localStorage.getItem('homepage_custom_scene_scale');
+        if (sceneScale) document.documentElement.style.setProperty('--custom-scene-scale', sceneScale);
+      })();
+    </script>
 </head>
 
 <body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+            <i class="fas fa-cube" style="-webkit-text-fill-color:var(--primary);"></i> 3D Parallax
+        </div>
+        <div style="width:48px;height:48px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="font-family:'Inter',sans-serif;font-size:0.85rem;color:rgba(255,255,255,0.4);">Loading your space…</div>
+    </div>
+
+    <!-- Wallpaper + Dim layers — must be first children so z-index -2/-1 sit behind everything -->
+    <div id="wallpaperLayer"></div>
+    <div id="dimOverlay"></div>
+
     <!-- Background Effects -->
     <div class="aurora"></div>
     <div class="hex-grid"></div>
@@ -105,9 +138,65 @@
     </button>
 
     <!-- Settings Button -->
-    <button class="settings-btn" id="settingsBtn">
+    <button class="settings-btn" id="settingsBtn" title="Settings (S)">
         <i class="fas fa-cog"></i>
     </button>
+
+    <!-- Customization Button -->
+    <button class="settings-btn" id="customizeBtn" style="left:58px;" title="Customize (C)">
+        <i class="fas fa-wand-magic-sparkles"></i>
+    </button>
+
+    <!-- Edit Layout Button -->
+    <button class="settings-btn" id="editLayoutBtn" style="left:108px;" title="Edit Layout">
+        <i class="fas fa-table-cells"></i>
+    </button>
+
+    <!-- Keyboard Shortcuts Overlay -->
+    <div class="modal-overlay" id="shortcutsModal">
+        <div class="modal" style="max-width:520px;">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h2>
+                <button class="modal-close" data-modal="shortcutsModal"><i class="fas fa-times"></i></button>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+                <tbody id="shortcutsTable">
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">/  or  Ctrl+K</td><td style="color:var(--text-primary,rgba(255,255,255,0.95));">Focus search bar</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">T</td><td style="color:rgba(255,255,255,0.95);">Open Templates picker</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">S</td><td style="color:rgba(255,255,255,0.95);">Open Settings panel</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">A</td><td style="color:rgba(255,255,255,0.95);">Toggle Ask AI chat</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">C</td><td style="color:rgba(255,255,255,0.95);">Toggle Customization mode</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">?</td><td style="color:rgba(255,255,255,0.95);">Toggle this overlay</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">F</td><td style="color:rgba(255,255,255,0.95);">Open Feedback modal</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">Escape</td><td style="color:rgba(255,255,255,0.95);">Close any open panel</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <!-- Widget Canvas (custom layout) — hidden until a layout is active -->
+    <div id="widgetCanvas" class="widget-canvas" style="display:none;"></div>
+    <!-- Edit-mode toolbar -->
+    <div id="widgetEditBar" class="widget-edit-bar" style="display:none;">
+        <span class="widget-edit-title"><i class="fas fa-table-cells"></i> Edit Layout</span>
+        <div class="widget-add-wrap">
+            <button type="button" class="btn btn-secondary btn-sm" id="widgetAddBtn">
+                <i class="fas fa-plus"></i> Add Widget
+            </button>
+            <div class="widget-add-menu" id="widgetAddMenu" style="display:none;"></div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="widgetResetBtn">
+            <i class="fas fa-rotate"></i> Reset
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="widgetClassicBtn" title="Use the classic centered layout">
+            <i class="fas fa-align-center"></i> Classic
+        </button>
+        <button type="button" class="btn btn-accent btn-sm" id="widgetDoneBtn">
+            <i class="fas fa-check"></i> Done
+        </button>
+    </div>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -117,6 +206,9 @@
             <div class="time-separator"></div>
             <div class="date-widget" id="date">Loading...</div>
         </div>
+
+        <!-- Weather / time-of-day greeting (fades in after geo resolves) -->
+        <div class="weather-greeting" id="weatherGreeting"></div>
 
         <!-- Name Title -->
         <div class="name-container">
@@ -132,24 +224,34 @@
         <!-- Search Bar -->
         <div class="search-container">
             <div class="search-wrapper" style="position: relative;">
-                <input type="text" class="search-bar" placeholder="Search the universe... or Ask AI" id="searchInput">
+                <i class="fas fa-search search-icon-left"></i>
+                <input type="text" class="search-bar" placeholder="Search the universe..." id="searchInput" autocomplete="off">
                 <button class="search-btn" id="searchBtn">
                     <i class="fas fa-arrow-right"></i>
                 </button>
+                <!-- Search History Dropdown -->
+                <div class="search-history-dropdown" id="searchHistoryDropdown" style="display:none;"></div>
             </div>
-            <!-- AI & Background Action Buttons -->
+            <!-- Search Engine Selector -->
+            <div class="search-engines" id="searchEngines" style="display:none;">
+                <button class="engine-btn active" data-engine="google" title="Google">
+                    <i class="fab fa-google"></i>
+                </button>
+                <button class="engine-btn" data-engine="bing" title="Bing">
+                    <i class="fab fa-microsoft"></i>
+                </button>
+                <button class="engine-btn" data-engine="duckduckgo" title="DuckDuckGo">
+                    <i class="fas fa-duck" style="font-family:'Fira Code',monospace;font-style:normal;font-size:0.8rem;">DDG</i>
+                </button>
+                <button class="engine-btn" data-engine="youtube" title="YouTube">
+                    <i class="fab fa-youtube"></i>
+                </button>
+            </div>
+            <!-- AI Action Button -->
             <div class="search-action-btns">
-                <button class="ai-action-btn" id="askAiBtn" title="Ask AI">
+                <button class="ai-action-btn" id="askAiBtn" title="Ask AI (A)">
                     <i class="fas fa-robot"></i>
                     <span>Ask AI</span>
-                </button>
-                <button class="ai-action-btn bg-gen-btn" id="bgGenBtn" title="Generate AI Background">
-                    <i class="fas fa-magic"></i>
-                    <span>AI Background</span>
-                </button>
-                <button class="ai-action-btn" id="bgRandomBtn" title="Random AI Theme">
-                    <i class="fas fa-dice"></i>
-                    <span>Random BG</span>
                 </button>
             </div>
         </div>
@@ -157,7 +259,6 @@
         <!-- Quick Links -->
         <div class="links-section">
             <div class="links-header">
-                <span class="links-title">⚡ Quick Access</span>
                 <button class="manage-btn" id="addLinkBtn">
                     <i class="fas fa-plus"></i> Add Link
                 </button>
@@ -169,33 +270,8 @@
     <!-- Particles Container -->
     <div id="particles"></div>
 
-
-    <!-- AI Loading Overlay -->
-    <div class="ai-loading-overlay" id="aiLoadingOverlay" style="display: none;">
-        <div class="ai-loading-content">
-            <div class="ai-spinner">
-                <div class="ai-spinner-ring"></div>
-                <div class="ai-spinner-ring"></div>
-                <i class="fas fa-magic"
-                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--primary); font-size: 24px; animation: pulse 2s infinite;"></i>
-            </div>
-            <h3 style="color: white; margin-top: 20px; font-family: 'Orbitron'; letter-spacing: 2px;">GENERATING VISION
-            </h3>
-            <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 10px;" id="aiLoadingText">Connecting to
-                neural net...</p>
-        </div>
-    </div>
-
-    <!-- Shortcut Hint -->
-    <div class="shortcut-hint">
-        Press <kbd>/</kbd> to search • <i class="fas fa-magic" style="color:var(--primary);"></i> AI Background • <i
-            class="fas fa-robot" style="color:var(--primary);"></i> Ask AI
-    </div>
-
-    <!-- Developer Credit -->
-    <div class="developer-credit">
-        Developed by <a href="#">Muhammad Ali Mehdi</a>
-    </div>
+    <!-- Decorative element pack layer (genre packs + AI custom elements) -->
+    <div id="decorPackLayer"></div>
 
     <!-- Template Modal -->
     <div class="modal-overlay" id="templateModal">
@@ -245,27 +321,316 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 class="modal-title"><i class="fas fa-cog"></i> Settings</h2>
-                <button class="modal-close" data-modal="settingsModal"><i class="fas fa-times"></i></button>
+                <button class="btn btn-icon modal-close" data-modal="settingsModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+
+            <!-- ── AI Makeover ─────────────────────────────────────────── -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-wand-magic-sparkles" style="color:var(--accent)"></i> AI Makeover
+                    </span>
+                </div>
+                <p class="settings-section-desc">Describe a vibe and the AI rewrites your colors, headline, and layout in one shot.</p>
+                <div class="makeover-bar" id="makeoverBar" style="position:static; width:100%; transform:none; border-radius:12px; margin-bottom:10px;">
+                    <i class="fas fa-wand-magic-sparkles makeover-bar-ico"></i>
+                    <input type="text" id="makeoverInput" class="makeover-input"
+                           placeholder="Describe a vibe... &quot;cyberpunk Tokyo&quot;"
+                           spellcheck="false" autocomplete="off">
+                    <button type="button" id="makeoverGoBtn" class="btn btn-accent btn-sm makeover-go">
+                        <i class="fas fa-sparkles"></i> Makeover
+                    </button>
+                    <button type="button" id="makeoverRevertBtn" class="btn btn-secondary btn-sm makeover-revert" style="display:none;">
+                        <i class="fas fa-rotate-left"></i> Revert
+                    </button>
+                </div>
+                <div class="makeover-status" id="makeoverStatus" style="display:none; position:static; transform:none; margin-top:10px;"></div>
+            </div>
+
+            <!-- ── Your Name ─────────────────────────────────────────── -->
             <form id="settingsForm">
                 <div class="form-group">
                     <label class="form-label">Your Name</label>
-                    <input type="text" class="form-input" id="settingsName" placeholder="Enter your name" required>
+                    <input type="text" class="form-input" id="settingsName"
+                           placeholder="Enter your name" required>
                 </div>
-                <div class="form-group" style="margin-top: 20px;">
-                    <label class="form-label">Groq API Key (AI Backgrounds &amp; AI Chat)</label>
-                    <input type="password" class="form-input" id="settingsApiKey" placeholder="gsk_...">
-                    <p style="font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 5px;">Used for AI Background
-                        generation and Ask AI feature.</p>
-                </div>
-                <button type="submit" class="submit-btn" style="margin-top: 20px;"><i class="fas fa-save"></i> SAVE
-                    SETTINGS</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:var(--sp-5);">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
             </form>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <p style="color: rgba(255,255,255,0.4); font-size: 0.8rem; text-align: center;">
-                    3D Homepage Templates v1.0<br>
-                    <span style="color: var(--primary);">Developed by Muhammad Ali Mehdi</span>
+
+            <!-- ── AI Providers ──────────────────────────────────────── -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-key" style="color:var(--primary)"></i> AI Providers
+                    </span>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary btn-sm" id="showSnippetBtn">
+                            <i class="fas fa-code"></i> Import Script
+                        </button>
+                        <button type="button" class="btn btn-accent btn-sm" id="showAddFormBtn">
+                            <i class="fas fa-plus"></i> Add Key
+                        </button>
+                    </div>
+                </div>
+                <p class="settings-section-desc">Add a Groq API key to power the AI chat and AI Makeover. Keys are stored locally only — never sent to any server except the model provider you choose.</p>
+
+                <!-- Snippet importer -->
+                <div id="snippetPanel" class="collapsible-panel" style="display:none;">
+                    <textarea id="snippetInput" class="snippet-textarea"
+                              placeholder="Paste Groq JS / Python / curl snippet here…"
+                              rows="5" spellcheck="false"></textarea>
+                    <button type="button" id="parseSnippetBtn"
+                            class="btn btn-accent" style="width:100%;margin-top:var(--sp-2);">
+                        <i class="fas fa-magic"></i> Parse &amp; Fill Form
+                    </button>
+                    <p id="snippetNote" class="snippet-note"></p>
+                </div>
+
+                <!-- Add / edit form -->
+                <div id="addProvForm" class="collapsible-panel" style="display:none;">
+                    <div class="prov-form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-input" id="provName"
+                                   placeholder="e.g. Groq #1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">API Key</label>
+                            <input type="password" class="form-input" id="provKey"
+                                   placeholder="gsk_…" autocomplete="off">
+                            <p id="provKeyWarn" class="field-note warn" style="display:none;"></p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Model</label>
+                            <input type="text" class="form-input" id="provModel"
+                                   list="modelSuggest"
+                                   placeholder="meta-llama/llama-4-scout-17b-16e-instruct">
+                            <datalist id="modelSuggest"></datalist>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label class="form-label">Priority</label>
+                                <input type="number" class="form-input" id="provPriority"
+                                       value="0" min="0" step="1">
+                            </div>
+                            <div class="form-group" style="grid-column:span 1;flex:2">
+                                <label class="form-label">Base URL</label>
+                                <input type="text" class="form-input" id="provBaseUrl"
+                                       placeholder="https://api.groq.com/openai/v1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="btn-group" style="margin-top:var(--sp-3);">
+                        <button type="button" id="cancelProvBtn"
+                                class="btn btn-secondary" style="flex:1;">Cancel</button>
+                        <button type="button" id="saveProvBtn"
+                                class="btn btn-accent" style="flex:1;">
+                            <i class="fas fa-check"></i> Save Provider
+                        </button>
+                    </div>
+                </div>
+
+                <div id="providersList" style="margin-top:var(--sp-3);"></div>
+
+                <p class="form-hint" style="margin-top:var(--sp-3);display:flex;align-items:center;gap:var(--sp-2);">
+                    <i class="fas fa-shield-alt" style="color:var(--accent);opacity:.6;"></i>
+                    Keys are stored locally on this device only.
                 </p>
+            </div>
+
+            <!-- ── Wallpaper ─────────────────────────────────────────── -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-image" style="color:var(--primary)"></i> Wallpaper
+                    </span>
+                </div>
+                <p class="settings-section-desc">Set a photo or video as your background. Drag & drop a file anywhere on the page, or pick one here. Supports JPG, PNG, WebP, MP4, and WebM.</p>
+
+                <!-- Picker row + thumbnail -->
+                <div class="wp-picker-row">
+                    <button type="button" class="btn btn-secondary" id="wallpaperPickerBtn">
+                        <i class="fas fa-folder-open"></i> Choose File
+                    </button>
+                    <div class="wp-thumb-wrap">
+                        <!-- Empty dropzone — shown when no wallpaper is set -->
+                        <div class="wp-thumb-empty" id="wpThumbEmpty">
+                            <i class="fas fa-image"></i>
+                            <span>Drop or pick a file</span>
+                        </div>
+                        <!-- Thumbnail — shown when a wallpaper is active (toggled by JS) -->
+                        <div class="wp-thumb" id="wpThumb" style="display:none;">
+                            <img id="wpThumbImg" src="" alt="Wallpaper preview"
+                                 style="display:none;">
+                            <div class="wp-thumb-video" id="wpThumbVideo" style="display:none;">
+                                <i class="fas fa-film"></i>
+                            </div>
+                            <button type="button" class="btn btn-icon btn-danger"
+                                    id="wallpaperClearBtn" title="Remove wallpaper">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="form-hint">Drop an image or video anywhere on the page ·
+                    images &amp; MP4/WebM supported</p>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Blur &nbsp;<span class="form-label-value" id="blurVal">0px</span>
+                    </label>
+                    <input type="range" class="wp-slider" id="wpBlur"
+                           min="0" max="20" step="1" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        Dim &nbsp;<span class="form-label-value" id="dimVal">30%</span>
+                    </label>
+                    <input type="range" class="wp-slider" id="wpDim"
+                           min="0" max="90" step="5" value="30">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Blend Mode</label>
+                    <select class="form-input" id="wpBlend">
+                        <option value="normal">Normal</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="soft-light">Soft Light</option>
+                        <option value="hard-light">Hard Light</option>
+                        <option value="color-dodge">Color Dodge</option>
+                        <option value="luminosity">Luminosity</option>
+                    </select>
+                </div>
+
+                <label class="ctrl-toggle" style="margin-bottom:var(--sp-3);">
+                    <input type="checkbox" id="wpParallax">
+                    <span class="ctrl-toggle-track"></span>
+                    <span class="ctrl-toggle-label">Parallax depth</span>
+                </label>
+
+                <label class="ctrl-toggle" style="margin-bottom:var(--sp-4);">
+                    <input type="checkbox" id="wpSubtle">
+                    <span class="ctrl-toggle-track"></span>
+                    <span class="ctrl-toggle-label">Subtle accents over photo</span>
+                    <span class="form-hint" style="margin:0 0 0 var(--sp-1);">(static only)</span>
+                </label>
+
+                <button type="button" class="btn btn-accent" id="wpApplyTheme"
+                        style="width:100%;">
+                    <i class="fas fa-palette"></i> Extract Colors → Apply to Theme
+                </button>
+            </div>
+
+            <!-- Background Elements Section Removed -->
+
+            <!-- ── Headline Lines ────────────────────────────────────── -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-heading" style="color:var(--secondary)"></i>
+                        Headline Lines
+                    </span>
+                    <button type="button" class="btn btn-accent btn-sm" id="aiHeadlineBtn">
+                        <i class="fas fa-magic"></i> AI Generate
+                    </button>
+                </div>
+                <p class="settings-section-desc">These lines cycle on your homepage with a typewriter effect. Add as many as you like — the AI can generate a set for you.</p>
+
+                <div id="headlineLinesList" style="margin-bottom:var(--sp-3);"></div>
+
+                <div class="input-action-row" style="margin-bottom:var(--sp-4);">
+                    <input type="text" class="form-input" id="newHeadlineLine"
+                           placeholder="Type a new line and press ＋">
+                    <button type="button" class="btn btn-secondary btn-icon"
+                            id="addHeadlineLineBtn" title="Add line">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <!-- Typewriter controls -->
+                <div class="tw-controls-row">
+                    <label class="ctrl-toggle">
+                        <input type="checkbox" id="headlineTypewriterOn" checked>
+                        <span class="ctrl-toggle-track"></span>
+                        <span class="ctrl-toggle-label">Typewriter</span>
+                    </label>
+                    <div class="speed-control">
+                        <label class="form-label">
+                            Speed &nbsp;<span class="form-label-value"
+                                              id="headlineSpeedVal">80ms</span>
+                        </label>
+                        <input type="range" class="wp-slider" id="headlineSpeed"
+                               min="20" max="200" step="10" value="80">
+                    </div>
+                </div>
+
+                <div id="aiHeadlinePanel" class="collapsible-panel" style="display:none;">
+                    <div class="input-action-row">
+                        <input type="text" class="form-input" id="aiHeadlineSeed"
+                               placeholder='Genre hint, e.g. "space explorer"'>
+                        <button type="button" class="btn btn-accent btn-sm"
+                                id="generateHeadlineBtn">
+                            <i class="fas fa-wand-magic-sparkles"></i> Generate
+                        </button>
+                    </div>
+                    <div id="aiHeadlineResults"
+                         style="display:none;margin-top:var(--sp-3);"></div>
+                    <p id="aiHeadlineStatus" class="snippet-note"
+                       style="margin-top:var(--sp-2);"></p>
+                </div>
+            </div>
+
+            <!-- ── Import / Export ───────────────────────────────────── -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-file-export" style="color:var(--secondary)"></i>
+                        Import / Export
+                    </span>
+                </div>
+                <p class="settings-section-desc">Back up or restore all your settings as a <code style="font-size:0.75rem;color:var(--primary);">3d-parallax-settings.json</code> file. Wallpaper blob inclusion is optional (increases file size).</p>
+                <label class="ctrl-toggle" style="margin-bottom:var(--sp-4);">
+                    <input type="checkbox" id="exportIncludeWallpaper">
+                    <span class="ctrl-toggle-track"></span>
+                    <span class="ctrl-toggle-label">Include wallpaper blob in export</span>
+                </label>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" id="exportSettingsBtn"
+                            style="flex:1;">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button type="button" class="btn btn-accent" id="importSettingsBtn"
+                            style="flex:1;">
+                        <i class="fas fa-upload"></i> Import
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="settings-section">
+                <div class="settings-section-hdr">
+                    <span class="settings-section-ttl">
+                        <i class="fas fa-comment-dots" style="color:var(--primary)"></i>
+                        Send Feedback
+                    </span>
+                </div>
+                <p class="settings-section-desc">Love something? Found a bug? Have an idea? Your feedback directly shapes the next version of 3D Parallax.</p>
+                <button type="button" class="btn btn-secondary" id="settingsFeedbackBtn" style="width:100%;">
+                    <i class="fas fa-paper-plane"></i> Open Feedback Form
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="settings-footer">
+                <p>3D Parallax v2.1.0</p>
+                <p style="color:var(--primary);">Developed by Muhammad Ali Mehdi</p>
             </div>
         </div>
     </div>
@@ -281,7 +646,7 @@
                             style="font-family:'Orbitron',sans-serif;font-size:0.95rem;font-weight:700;color:var(--primary);">
                             Ask AI</div>
                         <div style="font-size:0.72rem;color:rgba(255,255,255,0.45);letter-spacing:1px;">Powered by Groq
-                            • gpt-oss-120b</div>
+                            • <span id="aiModelLabel">meta-llama/llama-4-scout-17b-16e-instruct</span></div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px;">
@@ -318,34 +683,28 @@
         </div>
     </div>
 
-    <!-- AI Background Prompt Popup -->
-    <div class="modal-overlay" id="bgGenModal">
-        <div class="modal" style="max-width:440px;">
-            <div class="modal-header">
-                <h2 class="modal-title"><i class="fas fa-magic"></i> AI Background Generator</h2>
-                <button class="modal-close" data-modal="bgGenModal"><i class="fas fa-times"></i></button>
-            </div>
-            <p style="color:rgba(255,255,255,0.6);font-size:0.88rem;margin-bottom:16px;">Describe the background you
-                want and AI will create it using CSS gradients and colors.</p>
-            <div class="form-group">
-                <label class="form-label">Your Prompt</label>
-                <input type="text" class="form-input" id="bgGenInput"
-                    placeholder="e.g. deep space nebula purple and blue..." autocomplete="off">
-            </div>
-            <div style="display:flex;gap:10px;margin-top:16px;">
-                <button class="submit-btn" id="bgGenSubmit" style="flex:1;"><i class="fas fa-wand-magic-sparkles"></i>
-                    Generate</button>
-                <button class="submit-btn" id="bgGenRandom"
-                    style="flex:1;background:linear-gradient(135deg,#bf00ff,#00d4ff);"><i class="fas fa-dice"></i>
-                    Surprise Me!</button>
-            </div>
-        </div>
-    </div>
+
+    <!-- Hidden file pickers -->
+    <input type="file" id="wallpaperFilePicker" accept="image/*,video/mp4,video/webm" style="display:none;">
+    <input type="file" id="importFilePicker" accept=".json" style="display:none;">
 
     <!-- Scripts -->
+    <script src="ai-providers.js"></script>
+    <script src="wallpaper.js"></script>
+
     <script src="templates.js"></script>
+    <!-- Vendored MIT libraries (bundled locally — MV3-safe, no remote loading) -->
+    <script src="vendor/lz-string.min.js"></script>
+    <script src="vendor/qrcode-generator.js"></script>
+    <!-- Setup backbone + new feature modules -->
+    <script src="ambient.js"></script>
+    <script src="setup.js"></script>
+    <script src="widgets.js"></script>
+    <script src="makeover.js"></script>
+    <script src="sharing.js"></script>
     <script src="script.js"></script>
     <script src="interactions.js"></script>
+    <script src="feedback.js"></script>
 </body>
 
 </html>
