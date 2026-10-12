@@ -1,0 +1,10 @@
+{
+  "name": "3d-parallax-extension-tests",
+  "private": true,
+  "scripts": {
+    "test": "node tests/ui.cjs && node tests/extension.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
+  }
+}

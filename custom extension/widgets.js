@@ -23,6 +23,25 @@ const WidgetCanvas = (() => {
   let _canvas  = null;
   let _editBar = null;
   let _clockTimer = null;
+  const _history = [];
+  let _settingsCleanup = null;
+  const _weatherCache = new Map();
+
+  function _remember() {
+    _history.push(JSON.stringify(_layout));
+    if (_history.length > 30) _history.shift();
+    _updateUndo();
+  }
+  function _updateUndo() {
+    const button = document.getElementById('widgetUndoBtn');
+    if (button) button.disabled = !_history.length;
+  }
+  function undo() {
+    if (!_history.length) return;
+    _layout = JSON.parse(_history.pop());
+    if (!_layout) { _edit = false; _editBar.style.display = 'none'; document.body.classList.remove('layout-editing'); }
+    _save(); _renderView(); _updateUndo();
+  }
 
   // ── Widget catalogue ──────────────────────────────────────────────────────
   const WIDGETS = {
@@ -54,13 +73,18 @@ const WidgetCanvas = (() => {
   // ── Storage ─────────────────────────────────────────────────────────────
   function _save() {
     try { localStorage.setItem(LS_LAYOUT, _layout ? JSON.stringify(_layout) : ''); } catch {}
+    document.dispatchEvent(new Event('layout-changed'));
   }
   function _load() {
     try {
       const raw = localStorage.getItem(LS_LAYOUT);
       if (!raw) return null;
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) && arr.length ? arr : null;
+      return Array.isArray(arr) ? arr.filter(i => i && WIDGETS[i.widget]).map(i => {
+        const def = WIDGETS[i.widget];
+        const w = _clamp(Number(i.w) || def.w, def.minW, def.maxW);
+        return { ...i, id: i.id || _uid(), w, h: _clamp(Number(i.h) || def.h, def.minH, def.maxH), x: _clamp(Number(i.x) || 0, 0, COLS - w), y: Math.max(0, Number(i.y) || 0), props: i.props || {} };
+      }) : null;
     } catch { return null; }
   }
   function _uid() { return 'w_' + Math.random().toString(36).slice(2, 8); }
@@ -76,17 +100,19 @@ const WidgetCanvas = (() => {
   }
 
   function applyLayout(layout) {
+    _remember();
     if (!Array.isArray(layout) || !layout.length) { _layout = null; _save(); _renderView(); return; }
     _layout = layout
       .filter(i => i && WIDGETS[i.widget])
       .map(i => ({
         id: _uid(), widget: i.widget,
         x: _clamp(i.x | 0, 0, COLS - 1), y: Math.max(0, i.y | 0),
-        w: _clamp(i.w | 0 || WIDGETS[i.widget].w, 1, COLS),
-        h: _clamp(i.h | 0 || WIDGETS[i.widget].h, 1, 12),
+        w: _clamp(i.w | 0 || WIDGETS[i.widget].w, WIDGETS[i.widget].minW, WIDGETS[i.widget].maxW),
+        h: _clamp(i.h | 0 || WIDGETS[i.widget].h, WIDGETS[i.widget].minH, WIDGETS[i.widget].maxH),
         props: (i.props && typeof i.props === 'object') ? i.props : {},
         hidden: !!i.hidden
       }));
+    _layout.forEach(i => { i.x = Math.min(i.x, COLS - i.w); });
     _save();
     _renderView();
   }
@@ -110,43 +136,43 @@ const WidgetCanvas = (() => {
 
   // ── Render all widget cards ───────────────────────────────────────────────
   function _renderWidgets() {
-    if (!_canvas) return;
+    if (!_canvas || !_layout) return;
     _canvas.innerHTML = '';
     _canvas.classList.toggle('editing', _edit);
 
     // canvas height = max row used
     let maxRow = 1;
-    _layout.forEach(i => { maxRow = Math.max(maxRow, i.y + i.h); });
+    const stacked = !_edit && window.innerWidth < 700;
+    _layout.forEach(i => { if (_edit || !i.hidden) maxRow = Math.max(maxRow, i.y + i.h); });
+    if (stacked) maxRow = Math.max(1, _layout.filter(i => !i.hidden).reduce((sum,i) => sum + i.h, 0));
     _canvas.style.setProperty('--rows', maxRow);
 
+    let stackY = 0;
     _layout.forEach(item => {
       if (item.hidden && !_edit) return;
       const card = document.createElement('div');
       card.className = 'widget-card' + (item.hidden ? ' widget-hidden' : '');
       card.dataset.id = item.id;
-      _positionCard(card, item);
+      card.dataset.widget = item.widget;
+      _positionCard(card, stacked ? { ...item, x: 0, y: stackY, w: COLS } : item);
+      if (stacked) stackY += item.h;
 
       const def = WIDGETS[item.widget];
       const isLinks = item.widget === 'quicklinks';
-      const addLinkPillHtml = `<button class="wc-add-link-pill" data-act="addlink" title="Add link"><i class="fas fa-plus"></i><span>Add Link</span></button>`;
+      const addLinkPillHtml = '';
 
       card.innerHTML =
         (_edit
           ? `<div class="widget-chrome">
-              <span class="widget-drag" title="Drag"><i class="fas fa-up-down-left-right"></i> ${_esc(def.label)}</span>
+              <span class="widget-drag" tabindex="0" role="button" aria-label="Move ${_esc(def.label)} with arrow keys" title="Drag or use arrow keys to move"><i class="fas fa-grip-vertical"></i> ${_esc(def.label)}</span>
               <span class="widget-tools">
                 ${isLinks ? addLinkPillHtml : ''}
-                <button class="widget-tool" data-act="settings" title="Settings"><i class="fas fa-gear"></i></button>
-                <button class="widget-tool" data-act="hide" title="${item.hidden ? 'Show' : 'Hide'}"><i class="fas fa-eye${item.hidden ? '-slash' : ''}"></i></button>
-                <button class="widget-tool" data-act="remove" title="Remove"><i class="fas fa-xmark"></i></button>
+                <button class="widget-tool" data-act="settings" title="${_esc(def.label)} settings" aria-label="${_esc(def.label)} settings"><i class="fas fa-sliders"></i></button>
+                <button class="widget-tool" data-act="hide" title="${item.hidden ? 'Show' : 'Hide'} ${_esc(def.label)}" aria-label="${item.hidden ? 'Show' : 'Hide'} ${_esc(def.label)}" aria-pressed="${!item.hidden}"><i class="fas fa-eye${item.hidden ? '-slash' : ''}"></i></button>
+                <button class="widget-tool" data-act="remove" title="Remove ${_esc(def.label)}" aria-label="Remove ${_esc(def.label)}"><i class="fas fa-xmark"></i></button>
               </span>
             </div>`
-          : (isLinks
-              ? `<div class="widget-links-header">
-                  <span class="widget-links-title"><i class="fas fa-link"></i> Quick Links</span>
-                  ${addLinkPillHtml}
-                 </div>`
-              : '')
+          : ''
         ) +
         `<div class="widget-body" data-w="${item.widget}"></div>` +
         (_edit ? `<div class="widget-resize" title="Resize"><i class="fas fa-up-right-and-down-left-from-center"></i></div>` : '');
@@ -166,7 +192,7 @@ const WidgetCanvas = (() => {
 
   function _positionCard(card, item) {
     card.style.left   = (item.x / COLS * 100) + '%';
-    card.style.width  = (item.w / COLS * 100) + '%';
+    card.style.width  = `calc(${item.w / COLS * 100}% - ${item.x + item.w < COLS ? GAP : 0}px)`;
     card.style.top    = (item.y * (ROWH + GAP)) + 'px';
     card.style.height = (item.h * ROWH + (item.h - 1) * GAP) + 'px';
   }
@@ -236,7 +262,7 @@ const WidgetCanvas = (() => {
     el.className = 'widget-body wb-search';
     el.innerHTML = `<div class="wb-search-wrap">
       <i class="fas fa-magnifying-glass"></i>
-      <input type="text" class="wb-search-input" placeholder="Search…">
+      <input type="text" class="wb-search-input" placeholder="Search the web" aria-label="Search the web">
     </div>`;
     const input = el.querySelector('input');
     const engines = { google: 'https://www.google.com/search?q=', bing: 'https://www.bing.com/search?q=', duck: 'https://duckduckgo.com/?q=' };
@@ -252,9 +278,9 @@ const WidgetCanvas = (() => {
     const links = (window.app && window.app.links) || [];
 
     // Build link cards HTML (no inline onclick — CSP-safe)
-    let html = links.slice(0, 12).map((l, idx) =>
-      `<a class="link-card" data-href="${_esc(l.url)}" data-idx="${idx}" style="--card-color:${_esc(l.color || 'var(--primary)')}; --card-glow:${_esc(l.color || 'var(--primary)')}">` +
-        `<button class="remove-btn" data-idx="${idx}" title="Remove">×</button>` +
+    let html = links.map((l, idx) =>
+      `<a class="link-card" href="${/^https?:\/\//i.test(l.url) ? _esc(l.url) : '#'}" data-index="${idx}" draggable="true" style="--card-color:${_esc(l.color || 'var(--primary)')}; --card-glow:${_esc(l.color || 'var(--primary)')}">` +
+        `<button class="remove-btn" data-idx="${idx}" title="Remove ${_esc(l.name)}" aria-label="Remove ${_esc(l.name)}">×</button>` +
         `<div class="link-icon-wrapper"><i class="${_esc(l.icon || 'fas fa-link')} link-icon" style="color:${_esc(l.color || 'var(--primary)')}"></i></div>` +
         `<span class="link-name">${_esc(l.name || l.title || '')}</span>` +
       `</a>`
@@ -262,21 +288,19 @@ const WidgetCanvas = (() => {
 
     el.innerHTML = html;
 
-    // Wire up link cards and remove buttons via event delegation
-    el.querySelectorAll('.link-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-btn')) return;
-        const url = card.dataset.href;
-        if (url) window.open(url, '_blank');
-      });
-    });
     el.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         const idx = parseInt(btn.dataset.idx, 10);
         if (window.app) window.app.removeLink(idx);
       });
     });
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'shortcut-add'; add.setAttribute('aria-label', 'Add a shortcut');
+    add.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i><span>Add link</span>';
+    add.addEventListener('click', () => window.app?.openLinkModal()); el.appendChild(add);
+    window.app?._initLinkDrag(el);
 
     // Allow horizontal scroll in the containing widget-card
     const wCard = el.closest('.widget-card');
@@ -284,22 +308,32 @@ const WidgetCanvas = (() => {
   }
   function _mountWeather(el, p) {
     el.className = 'widget-body wb-weather';
-    el.innerHTML = `<div class="wb-weather-inner"><i class="fas fa-location-crosshairs"></i> <span>Locating…</span></div>`;
-    const span = el.querySelector('span');
+    el.innerHTML = `<div class="wb-weather-inner"><i class="fas fa-cloud-sun"></i> <span>Loading weather…</span></div>`;
     const units = p.units === 'f' ? 'fahrenheit' : 'celsius';
     const unitSym = p.units === 'f' ? '°F' : '°C';
-    if (!navigator.geolocation) { span.textContent = 'Weather unavailable'; return; }
-    navigator.geolocation.getCurrentPosition(async pos => {
-      try {
-        const { latitude, longitude } = pos.coords;
-        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${units}`);
-        const d = await r.json();
-        const t = Math.round(d.current?.temperature_2m);
-        const code = d.current?.weather_code;
-        const icon = _wxIcon(code);
-        el.querySelector('.wb-weather-inner').innerHTML = `<i class="fas ${icon}"></i> <span>${isNaN(t) ? '--' : t}${unitSym}</span>`;
-      } catch { span.textContent = 'Weather error'; }
-    }, () => { span.textContent = 'Location denied'; }, { timeout: 8000 });
+    const show = data => { el.innerHTML = `<div class="wb-weather-inner"><i class="fas ${_wxIcon(data.code)}"></i><span>${Math.round(data.temp)}${unitSym}</span></div>`; };
+    const error = reason => {
+      el.innerHTML = `<div class="wb-weather-error"><span>${_esc(reason)}</span><button type="button" class="btn btn-secondary btn-sm">Try again</button></div>`;
+      el.querySelector('button').onclick = () => { _weatherCache.delete(units); _mountWeather(el,p); };
+    };
+    if (!navigator.geolocation) { error('Location is unavailable in this browser.'); return; }
+    let cached = _weatherCache.get(units);
+    if (!cached || Date.now() - cached.time > 30 * 60 * 1000) {
+      const promise = new Promise((resolve,reject) => {
+        navigator.geolocation.getCurrentPosition(async pos => {
+          try {
+            const { latitude, longitude } = pos.coords;
+            const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${units}`, { signal: AbortSignal.timeout(8000) });
+            if (!r.ok) throw new Error('Weather is temporarily unavailable.');
+            const d = await r.json();
+            if (!Number.isFinite(d.current?.temperature_2m)) throw new Error('Weather is temporarily unavailable.');
+            resolve({ temp: d.current.temperature_2m, code: d.current.weather_code });
+          } catch { reject(new Error('Could not load weather. Check your connection.')); }
+        }, e => reject(new Error(e.code === 1 ? 'Allow location in your browser to see weather.' : 'Could not find your location.')), { timeout: 8000, maximumAge: 30 * 60 * 1000 });
+      });
+      cached = { time: Date.now(), promise }; _weatherCache.set(units,cached);
+    }
+    cached.promise.then(show).catch(e => { _weatherCache.delete(units); error(e.message); });
   }
   function _wxIcon(code) {
     if (code == null) return 'fa-cloud';
@@ -391,12 +425,21 @@ const WidgetCanvas = (() => {
 
     drag?.addEventListener('pointerdown', e => _startDrag(e, card, item));
     resize?.addEventListener('pointerdown', e => _startResize(e, card, item));
+    drag?.addEventListener('keydown', e => {
+      const directions = { ArrowLeft: [-1,0], ArrowRight: [1,0], ArrowUp: [0,-1], ArrowDown: [0,1] };
+      if (!directions[e.key]) return;
+      e.preventDefault(); _remember();
+      const [dx,dy] = directions[e.key];
+      item.x = _clamp(item.x + dx, 0, COLS - item.w); item.y = Math.max(0, item.y + dy);
+      _resolveOverlap(item); _save(); _renderWidgets();
+      _canvas.querySelector(`[data-id="${item.id}"] .widget-drag`)?.focus();
+    });
 
     card.querySelectorAll('[data-act]').forEach(btn => {
       btn.addEventListener('click', () => {
         const act = btn.dataset.act;
-        if (act === 'remove')   { _layout = _layout.filter(i => i.id !== item.id); _save(); _renderWidgets(); }
-        else if (act === 'hide')    { item.hidden = !item.hidden; _save(); _renderWidgets(); }
+        if (act === 'remove')   { _remember(); _layout = _layout.filter(i => i.id !== item.id); _save(); _renderWidgets(); }
+        else if (act === 'hide')    { toggleVisibility(item.id); }
         else if (act === 'settings') _openWidgetSettings(item);
         else if (act === 'addlink') { if (window.app) window.app.openLinkModal(); }
       });
@@ -408,8 +451,25 @@ const WidgetCanvas = (() => {
     return { cw: rect.width / COLS, rh: ROWH + GAP, rect };
   }
 
+  // Keep the widget the user moved in place and push intersecting cards below it.
+  function _resolveOverlap(moved) {
+    if (moved.hidden) return;
+    const queue = [moved];
+    while (queue.length) {
+      const current = queue.shift();
+      _layout.forEach(other => {
+        if (other === current || other === moved || other.hidden) return;
+        if (current.x < other.x + other.w && current.x + current.w > other.x && current.y < other.y + other.h && current.y + current.h > other.y) {
+          other.y = current.y + current.h; queue.push(other);
+        }
+      });
+    }
+  }
+
   function _startDrag(e, card, item) {
+    if (e.button !== 0) return;
     e.preventDefault();
+    _remember();
     const { cw, rh, rect } = _cellSize();
     const startX = e.clientX, startY = e.clientY;
     const ox = item.x, oy = item.y;
@@ -425,14 +485,19 @@ const WidgetCanvas = (() => {
       card.classList.remove('dragging');
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      _resolveOverlap(item);
       _save(); _renderWidgets();
     };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
   }
 
   function _startResize(e, card, item) {
+    if (e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
+    _remember();
     const { cw, rh } = _cellSize();
     const startX = e.clientX, startY = e.clientY;
     const ow = item.w, oh = item.h;
@@ -461,21 +526,25 @@ const WidgetCanvas = (() => {
       if (tooltip) tooltip.style.display = 'none';
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      _resolveOverlap(item);
       _save(); _renderWidgets();
     };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
   }
 
   // ── Per-widget settings popover ───────────────────────────────────────────
   function _openWidgetSettings(item) {
-    const existing = document.getElementById('widgetSettingsPop');
-    if (existing) existing.remove();
+    _settingsCleanup?.();
+    const opener = document.activeElement;
     const pop = document.createElement('div');
     pop.id = 'widgetSettingsPop';
     pop.className = 'widget-settings-pop';
+    pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-labelledby', 'wspTitle');
     const p = item.props || (item.props = {});
-    let html = `<div class="wsp-title">${_esc(WIDGETS[item.widget].label)} settings</div>`;
+    let html = `<div class="wsp-header"><div class="wsp-title" id="wspTitle">${_esc(WIDGETS[item.widget].label)}</div><button class="modal-close wsp-close" aria-label="Close widget settings">×</button></div>`;
     switch (item.widget) {
       case 'clock':
         html += _row('Format', `<select data-k="format"><option value="24"${p.format !== '12' ? ' selected' : ''}>24-hour</option><option value="12"${p.format === '12' ? ' selected' : ''}>12-hour</option></select>`);
@@ -498,32 +567,51 @@ const WidgetCanvas = (() => {
         html += _row('Target', `<input type="datetime-local" data-k="target" value="${_esc(p.target || '')}">`);
         break;
       case 'headline':
-        html += `<p class="wsp-note">Edit phrases and typewriter settings in the main Settings panel.</p>`;
+        html += `<p class="wsp-note">Choose the phrases that rotate on your homepage.</p><button type="button" class="btn btn-secondary wsp-headline">Edit headline</button>`;
         break;
       case 'name':
         html += _row('Name', `<input type="text" data-k="name" value="${_esc(p.name || '')}" placeholder="Your name">`);
         break;
       case 'quicklinks':
-        html += `<p class="wsp-note">Add/remove links in the classic layout view.</p>`;
+        html += `<p class="wsp-note">Add a shortcut with the plus tile. Drag shortcuts to reorder them, or use the × on a card to remove one.</p><button type="button" class="btn btn-secondary wsp-add-link"><i class="fas fa-plus"></i> Add shortcut</button>`;
         break;
       default:
-        html += `<p class="wsp-note">No options for this widget.</p>`;
+        html += `<p class="wsp-note">You can adjust this widget's size and position below.</p>`;
     }
+    const def = WIDGETS[item.widget];
+    html += `<div class="wsp-section"><div class="wsp-section-title">Size & position</div>`;
+    html += _row('Width (columns)', `<input type="number" data-layout="w" min="${def.minW}" max="${def.maxW}" value="${item.w}">`);
+    html += _row('Height (rows)', `<input type="number" data-layout="h" min="${def.minH}" max="${def.maxH}" value="${item.h}">`);
+    html += _row('Column', `<input type="number" data-layout="x" min="1" max="${COLS}" value="${item.x+1}">`);
+    html += _row('Row', `<input type="number" data-layout="y" min="1" max="100" value="${item.y+1}">`);
+    html += '</div>';
     html += `<button class="btn btn-accent btn-sm wsp-done" style="width:100%;margin-top:8px;">Apply</button>`;
     pop.innerHTML = html;
     document.body.appendChild(pop);
-
+    const close = () => { document.removeEventListener('pointerdown', off); document.removeEventListener('keydown', onKey, true); pop.remove(); if (opener?.isConnected) opener.focus(); _settingsCleanup = null; };
+    const off = e => { if (!pop.contains(e.target)) close(); };
+    const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); } };
+    _settingsCleanup = close;
+    pop.querySelector('.wsp-close').onclick = close;
+    pop.querySelector('.wsp-headline')?.addEventListener('click', () => { close(); window.HomepageUI?.openSettings('general'); });
+    pop.querySelector('.wsp-add-link')?.addEventListener('click', () => { close(); window.app?.openLinkModal(); });
     pop.querySelector('.wsp-done').onclick = () => {
+      _remember();
       pop.querySelectorAll('[data-k]').forEach(inp => {
         const k = inp.dataset.k;
         p[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
       });
-      _save(); _renderWidgets(); pop.remove();
+      const value = key => Number(pop.querySelector(`[data-layout="${key}"]`).value);
+      item.w = _clamp(value('w') || def.w, def.minW, def.maxW);
+      item.h = _clamp(value('h') || def.h, def.minH, def.maxH);
+      item.x = _clamp((value('x') || 1) - 1, 0, COLS - item.w);
+      item.y = _clamp((value('y') || 1) - 1, 0, 99);
+      _resolveOverlap(item); _save(); _renderWidgets(); close();
     };
-    // close on outside click
+    (pop.querySelector('select, input') || pop.querySelector('.wsp-close')).focus();
+    document.addEventListener('keydown', onKey, true);
     setTimeout(() => {
-      const off = e => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('pointerdown', off); } };
-      document.addEventListener('pointerdown', off);
+      if (pop.isConnected) document.addEventListener('pointerdown', off);
     }, 0);
   }
   function _row(label, control) {
@@ -532,36 +620,55 @@ const WidgetCanvas = (() => {
 
   // ── Edit mode toggle ──────────────────────────────────────────────────────
   function enterEdit() {
-    if (!_layout) _layout = DEFAULT_LAYOUT.map(i => ({ ...i, id: _uid(), props: { ...i.props } }));
+    if (!_layout) { _remember(); _layout = DEFAULT_LAYOUT.map(i => ({ ...i, id: _uid(), props: { ...i.props } })); }
     _edit = true;
     _save();
     if (_editBar) _editBar.style.display = 'flex';
     document.body.classList.add('layout-editing');
     _renderView();
+    _updateUndo();
+    document.getElementById('editLayoutBtn')?.setAttribute('aria-pressed', 'true');
   }
   function exitEdit() {
+    _settingsCleanup?.();
     _edit = false;
     if (_editBar) _editBar.style.display = 'none';
     document.body.classList.remove('layout-editing');
     const menu = document.getElementById('widgetAddMenu'); if (menu) menu.style.display = 'none';
     _renderWidgets();
+    document.getElementById('editLayoutBtn')?.setAttribute('aria-pressed', 'false');
   }
   function toggleEdit() { _edit ? exitEdit() : enterEdit(); }
 
   function _addWidget(type) {
     if (!WIDGETS[type] || !_layout) return;
+    _remember();
     const def = WIDGETS[type];
     let maxRow = 0; _layout.forEach(i => { maxRow = Math.max(maxRow, i.y + i.h); });
     _layout.push({ id: _uid(), widget: type, x: 0, y: maxRow, w: def.w, h: def.h, props: {} });
     _save(); _renderWidgets();
+    requestAnimationFrame(() => _canvas.querySelector(`[data-id="${_layout.at(-1).id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   }
 
   function resetLayout() {
+    _remember();
     _layout = DEFAULT_LAYOUT.map(i => ({ ...i, id: _uid(), props: { ...i.props } }));
     _save(); _renderWidgets();
   }
   function useClassic() {
+    _remember();
     _layout = null; _save(); exitEdit(); _renderView();
+  }
+
+  function listItems() {
+    return (_layout || []).map(i => ({ id: i.id, label: WIDGETS[i.widget].label, icon: WIDGETS[i.widget].icon, hidden: !!i.hidden }));
+  }
+  function toggleVisibility(id) {
+    const item = _layout?.find(i => i.id === id); if (!item) return;
+    _remember(); item.hidden = !item.hidden; _resolveOverlap(item); _save(); _renderWidgets();
+  }
+  function openSettings(id) {
+    const item = _layout?.find(i => i.id === id); if (item) _openWidgetSettings(item);
   }
 
   // ── init ──────────────────────────────────────────────────────────────────
@@ -581,6 +688,8 @@ const WidgetCanvas = (() => {
     document.getElementById('widgetDoneBtn')?.addEventListener('click', exitEdit);
     document.getElementById('widgetResetBtn')?.addEventListener('click', resetLayout);
     document.getElementById('widgetClassicBtn')?.addEventListener('click', useClassic);
+    document.getElementById('widgetUndoBtn')?.addEventListener('click', undo);
+    document.getElementById('widgetElementsBtn')?.addEventListener('click', () => document.getElementById('customizeBtn').click());
 
     // Add-widget menu
     const addBtn = document.getElementById('widgetAddBtn');
@@ -591,20 +700,33 @@ const WidgetCanvas = (() => {
       addBtn.addEventListener('click', e => {
         e.stopPropagation();
         menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+        addBtn.setAttribute('aria-expanded', String(menu.style.display !== 'none'));
+        if (menu.style.display !== 'none') menu.querySelector('button')?.focus();
       });
       menu.querySelectorAll('.widget-add-item').forEach(b =>
         b.addEventListener('click', () => { _addWidget(b.dataset.w); menu.style.display = 'none'; }));
       document.addEventListener('pointerdown', e => {
-        if (!menu.contains(e.target) && e.target !== addBtn) menu.style.display = 'none';
+        if (!menu.contains(e.target) && !addBtn.contains(e.target)) { menu.style.display = 'none'; addBtn.setAttribute('aria-expanded', 'false'); }
       });
     }
 
     // Re-render widgets when underlying data changes
     document.addEventListener('ambient-changed', () => { if (_layout && !_edit) _canvas?.querySelectorAll('.wb-ambient').forEach(el => _mountAmbient(el)); });
+    document.addEventListener('links-changed', () => _canvas?.querySelectorAll('.wb-links').forEach(_mountLinks));
+    document.addEventListener('name-changed', () => {
+      if (!_layout) return;
+      _layout.filter(i => i.widget === 'greeting' || i.widget === 'name').forEach(i => _renderWidgetBody(_canvas.querySelector(`[data-id="${i.id}"] .widget-body`), i));
+    });
+    window.addEventListener('resize', () => { if (_layout) _renderWidgets(); });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && _edit && !document.querySelector('.modal-overlay.active, #customizationPanel.open, #widgetSettingsPop')) { exitEdit(); return; }
+      const active = document.activeElement;
+      if (_edit && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !active?.matches('input,textarea,select')) { e.preventDefault(); undo(); }
+    });
 
     _renderView();
   }
 
-  return { init, getLayout, applyLayout, enterEdit, exitEdit, toggleEdit, resetLayout, useClassic, DEFAULT_LAYOUT };
+  return { init, getLayout, applyLayout, enterEdit, exitEdit, toggleEdit, resetLayout, useClassic, undo, listItems, toggleVisibility, openSettings, DEFAULT_LAYOUT };
 })();
 window.WidgetCanvas = WidgetCanvas;

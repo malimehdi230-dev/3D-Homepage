@@ -54,8 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (greetEl) {
             const h = new Date().getHours();
             const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-            greetEl.innerHTML = `Good ${period}, `;
-            if (nameEl) nameEl.textContent = (userName && userName !== 'YOUR NAME') ? userName : 'there';
+            greetEl.innerHTML = `Good ${period}, <strong id="popupName">${_esc((userName && userName !== 'YOUR NAME') ? userName : 'there')}</strong>`;
         }
 
         // Quick links chips
@@ -79,11 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.storage.local.get(
                 ['homepage_template', 'homepage_userName', 'homepage_links', 'homepage_install_date'],
                 (result) => {
-                    const template = result.homepage_template || 'programmer';
-                    const userName = result.homepage_userName || '';
+                    const template = result.homepage_template || localStorage.getItem('homepage_template') || 'programmer';
+                    const userName = result.homepage_userName || localStorage.getItem('homepage_userName') || '';
                     let links = [];
-                    try { links = JSON.parse(result.homepage_links || '[]'); } catch {}
-                    const installDate = result.homepage_install_date;
+                    try { links = JSON.parse(result.homepage_links || localStorage.getItem('homepage_links') || '[]'); } catch {}
+                    const installDate = result.homepage_install_date || localStorage.getItem('homepage_install_date');
                     applyData(template, userName, links, installDate);
                 }
             );
@@ -145,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = {};
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
-                if (k && k.startsWith('homepage_')) data[k] = localStorage.getItem(k);
+                if (k && k.startsWith('homepage_') && k !== 'homepage_ai_providers') data[k] = localStorage.getItem(k);
             }
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');

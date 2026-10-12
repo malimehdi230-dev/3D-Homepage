@@ -2,7 +2,7 @@
 // Sends user feedback to the Vercel backend via fetch()
 
 // ─── REPLACE THIS URL with your deployed Vercel project URL ───────────────────
-const FEEDBACK_API = 'https://3-d-parallax-backend.vercel.app';
+const FEEDBACK_API = 'https://3-d-parallax-backend.vercel.app/api/feedback';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FB_GIVEN_KEY      = 'homepage_feedback_given';
@@ -261,11 +261,12 @@ class FeedbackModule {
       ?? localStorage.getItem('homepage_template')
       ?? 'unknown';
     const version = (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version)
-      ?? '2.1.0';
+      ?? '2.2.0';
 
     try {
       const res = await fetch(FEEDBACK_API, {
         method:  'POST',
+        signal: AbortSignal.timeout(15000),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message, type, rating, theme, version,
@@ -277,7 +278,13 @@ class FeedbackModule {
         throw new Error('Too many submissions. Please wait a minute before trying again.');
       }
 
-      const data = await res.json();
+      if (res.status === 404) {
+        throw new Error('The feedback service is unavailable. Please try again later.');
+      }
+
+      let data;
+      try { data = await res.json(); }
+      catch { throw new Error('The feedback service returned an unexpected response. Please try again later.'); }
 
       if (res.ok && data.success) {
         submitBtn.innerHTML        = '<i class="fas fa-check"></i> Sent!';

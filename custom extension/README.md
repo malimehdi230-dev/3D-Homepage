@@ -6,7 +6,7 @@
 
 [![Manifest Version](https://img.shields.io/badge/Manifest-V3-blue?style=flat-square)](https://developer.chrome.com/docs/extensions/mv3/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-2.0.1-purple?style=flat-square)](manifest.json)
+[![Version](https://img.shields.io/badge/Version-2.2.0-purple?style=flat-square)](manifest.json)
 [![Made With Love](https://img.shields.io/badge/Made%20with-%E2%9D%A4-red?style=flat-square)]()
 
 *Developed by **Muhammad Ali Mehdi***
@@ -14,6 +14,10 @@
 </div>
 
 ---
+
+## Interface update — v2.2.0
+
+Compact shortcuts, natural system fonts, settings navigation, and a simpler customization drawer are now included. Layout editing supports undo and precise placement. See [the release notes](RELEASE.md) for changes, installation, and validation.
 
 ## 📸 Preview
 
@@ -410,8 +414,8 @@ Good morning, Alex  ☀️ 22°C
 | Storage | `localStorage` (settings) · `IndexedDB` (wallpaper blobs) · `chrome.storage.local` (provider configs in extension context) |
 | AI | [Groq API](https://console.groq.com) — OpenAI-compatible, free tier available |
 | Weather | [Open-Meteo](https://open-meteo.com/) — free, no key required |
-| Fonts | [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) · [Orbitron](https://fonts.google.com/specimen/Orbitron) · [Fira Code](https://fonts.google.com/specimen/Fira+Code) via Google Fonts |
-| Icons | [Font Awesome 6](https://fontawesome.com/) via CDN |
+| Fonts | Native system fonts (Segoe UI on Windows, system font on macOS) |
+| Icons | [Font Awesome 6](https://fontawesome.com/) bundled locally with its license |
 
 ---
 

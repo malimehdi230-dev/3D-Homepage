@@ -5,31 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Parallax | Developed by Muhammad Ali Mehdi</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Fira+Code:wght@400;600&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <script>
-      (function() {
-        var clockSize = localStorage.getItem('homepage_custom_clock_size');
-        if (clockSize) document.documentElement.style.setProperty('--custom-clock-size', clockSize + 'rem');
-        var nameSize = localStorage.getItem('homepage_custom_name_size');
-        if (nameSize) document.documentElement.style.setProperty('--custom-name-size', nameSize + 'rem');
-        var headlineSize = localStorage.getItem('homepage_custom_headline_size');
-        if (headlineSize) document.documentElement.style.setProperty('--custom-headline-size', headlineSize + 'rem');
-        var searchH = localStorage.getItem('homepage_custom_search_height');
-        if (searchH) document.documentElement.style.setProperty('--custom-search-height', searchH + 'px');
-        var searchW = localStorage.getItem('homepage_custom_search_width');
-        if (searchW) document.documentElement.style.setProperty('--custom-search-width', searchW + 'px');
-        var searchR = localStorage.getItem('homepage_custom_search_radius');
-        if (searchR) document.documentElement.style.setProperty('--custom-search-radius', searchR + 'px');
-        var weatherSize = localStorage.getItem('homepage_custom_weather_size');
-        if (weatherSize) document.documentElement.style.setProperty('--custom-weather-size', weatherSize + 'rem');
-        var sceneScale = localStorage.getItem('homepage_custom_scene_scale');
-        if (sceneScale) document.documentElement.style.setProperty('--custom-scene-scale', sceneScale);
-      })();
-    </script>
+    <link rel="stylesheet" href="ui.css">
+    <script src="preferences.js"></script>
 </head>
 
 <body>
@@ -134,7 +113,7 @@
 
     <!-- Template Selector Button -->
     <button class="template-btn" id="templateBtn">
-        <i class="fas fa-palette"></i> Templates
+        <i class="fas fa-palette"></i> Themes
     </button>
 
     <!-- Settings Button -->
@@ -143,7 +122,7 @@
     </button>
 
     <!-- Customization Button -->
-    <button class="settings-btn" id="customizeBtn" style="left:58px;" title="Customize (C)">
+    <button class="settings-btn" id="customizeBtn" style="left:58px;" title="Customize elements (C)" aria-label="Customize elements">
         <i class="fas fa-wand-magic-sparkles"></i>
     </button>
 
@@ -180,18 +159,20 @@
     <div id="widgetCanvas" class="widget-canvas" style="display:none;"></div>
     <!-- Edit-mode toolbar -->
     <div id="widgetEditBar" class="widget-edit-bar" style="display:none;">
-        <span class="widget-edit-title"><i class="fas fa-table-cells"></i> Edit Layout</span>
+        <span class="widget-edit-title">Arrange your widgets<small>Drag to move · corner to resize</small></span>
         <div class="widget-add-wrap">
             <button type="button" class="btn btn-secondary btn-sm" id="widgetAddBtn">
-                <i class="fas fa-plus"></i> Add Widget
+                <i class="fas fa-plus"></i> Add widget
             </button>
             <div class="widget-add-menu" id="widgetAddMenu" style="display:none;"></div>
         </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="widgetUndoBtn" disabled title="Undo last layout change"><i class="fas fa-rotate-left"></i> Undo</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="widgetElementsBtn" title="Show or hide widgets"><i class="fas fa-sliders"></i> Elements</button>
         <button type="button" class="btn btn-secondary btn-sm" id="widgetResetBtn">
             <i class="fas fa-rotate"></i> Reset
         </button>
         <button type="button" class="btn btn-secondary btn-sm" id="widgetClassicBtn" title="Use the classic centered layout">
-            <i class="fas fa-align-center"></i> Classic
+            <i class="fas fa-align-center"></i> Centered
         </button>
         <button type="button" class="btn btn-accent btn-sm" id="widgetDoneBtn">
             <i class="fas fa-check"></i> Done
@@ -291,27 +272,28 @@
     <div class="modal-overlay" id="linkModal">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title"><i class="fas fa-link"></i> Add New Link</h2>
+                <h2 class="modal-title"><i class="fas fa-link"></i> Add a shortcut</h2>
                 <button class="modal-close" data-modal="linkModal"><i class="fas fa-times"></i></button>
             </div>
+            <p class="link-dialog-hint">Keep a favorite website one click away.</p>
             <form id="linkForm">
                 <div class="form-group">
-                    <label class="form-label">Link Name</label>
+                    <label class="form-label">Name</label>
                     <input type="text" class="form-input" id="linkName" placeholder="e.g., Netflix" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">URL</label>
-                    <input type="url" class="form-input" id="linkUrl" placeholder="https://example.com" required>
+                    <input type="text" inputmode="url" class="form-input" id="linkUrl" placeholder="example.com" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Choose Icon</label>
+                    <label class="form-label">Icon</label>
                     <div class="icon-picker" id="iconPicker"></div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Choose Color</label>
+                    <label class="form-label">Color</label>
                     <div class="color-picker-wrapper" id="colorPicker"></div>
                 </div>
-                <button type="submit" class="submit-btn"><i class="fas fa-plus"></i> ADD LINK</button>
+                <button type="submit" class="submit-btn"><i class="fas fa-plus"></i> Add shortcut</button>
             </form>
         </div>
     </div>
@@ -333,11 +315,11 @@
                         <i class="fas fa-wand-magic-sparkles" style="color:var(--accent)"></i> AI Makeover
                     </span>
                 </div>
-                <p class="settings-section-desc">Describe a vibe and the AI rewrites your colors, headline, and layout in one shot.</p>
+                <p class="settings-section-desc">Describe a style to update your colors and headline. You can revert the result.</p>
                 <div class="makeover-bar" id="makeoverBar" style="position:static; width:100%; transform:none; border-radius:12px; margin-bottom:10px;">
                     <i class="fas fa-wand-magic-sparkles makeover-bar-ico"></i>
                     <input type="text" id="makeoverInput" class="makeover-input"
-                           placeholder="Describe a vibe... &quot;cyberpunk Tokyo&quot;"
+                           placeholder="Try a style, e.g. a quiet forest"
                            spellcheck="false" autocomplete="off">
                     <button type="button" id="makeoverGoBtn" class="btn btn-accent btn-sm makeover-go">
                         <i class="fas fa-sparkles"></i> Makeover
@@ -349,34 +331,34 @@
                 <div class="makeover-status" id="makeoverStatus" style="display:none; position:static; transform:none; margin-top:10px;"></div>
             </div>
 
-            <!-- ── Your Name ─────────────────────────────────────────── -->
+            <!-- ── Your name ─────────────────────────────────────────── -->
             <form id="settingsForm">
                 <div class="form-group">
-                    <label class="form-label">Your Name</label>
+                    <label class="form-label">Your name</label>
                     <input type="text" class="form-input" id="settingsName"
                            placeholder="Enter your name" required>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;margin-top:var(--sp-5);">
-                    <i class="fas fa-save"></i> Save Settings
+                    <i class="fas fa-save"></i> Save name
                 </button>
             </form>
 
-            <!-- ── AI Providers ──────────────────────────────────────── -->
+            <!-- ── Connected providers ──────────────────────────────────────── -->
             <div class="settings-section">
                 <div class="settings-section-hdr">
                     <span class="settings-section-ttl">
-                        <i class="fas fa-key" style="color:var(--primary)"></i> AI Providers
+                        <i class="fas fa-key" style="color:var(--primary)"></i> Connected providers
                     </span>
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary btn-sm" id="showSnippetBtn">
-                            <i class="fas fa-code"></i> Import Script
+                            <i class="fas fa-code"></i> Import snippet
                         </button>
                         <button type="button" class="btn btn-accent btn-sm" id="showAddFormBtn">
-                            <i class="fas fa-plus"></i> Add Key
+                            <i class="fas fa-plus"></i> Add API key
                         </button>
                     </div>
                 </div>
-                <p class="settings-section-desc">Add a Groq API key to power the AI chat and AI Makeover. Keys are stored locally only — never sent to any server except the model provider you choose.</p>
+                <p class="settings-section-desc">AI features are optional. Add a Groq or compatible API key to get started. Your key stays on this device and is sent only to the provider you choose.</p>
 
                 <!-- Snippet importer -->
                 <div id="snippetPanel" class="collapsible-panel" style="display:none;">
@@ -411,6 +393,8 @@
                                    placeholder="meta-llama/llama-4-scout-17b-16e-instruct">
                             <datalist id="modelSuggest"></datalist>
                         </div>
+                        <details class="provider-advanced">
+                            <summary>Advanced connection settings</summary>
                         <div class="form-group-row">
                             <div class="form-group">
                                 <label class="form-label">Priority</label>
@@ -423,6 +407,7 @@
                                        placeholder="https://api.groq.com/openai/v1">
                             </div>
                         </div>
+                        </details>
                     </div>
                     <div class="btn-group" style="margin-top:var(--sp-3);">
                         <button type="button" id="cancelProvBtn"
@@ -449,7 +434,7 @@
                         <i class="fas fa-image" style="color:var(--primary)"></i> Wallpaper
                     </span>
                 </div>
-                <p class="settings-section-desc">Set a photo or video as your background. Drag & drop a file anywhere on the page, or pick one here. Supports JPG, PNG, WebP, MP4, and WebM.</p>
+                <p class="settings-section-desc">Upload a favorite photo or a short looping video. You can also drop a file onto your homepage.</p>
 
                 <!-- Picker row + thumbnail -->
                 <div class="wp-picker-row">
@@ -524,30 +509,30 @@
 
                 <button type="button" class="btn btn-accent" id="wpApplyTheme"
                         style="width:100%;">
-                    <i class="fas fa-palette"></i> Extract Colors → Apply to Theme
+                    <i class="fas fa-palette"></i> Match colors to wallpaper
                 </button>
             </div>
 
             <!-- Background Elements Section Removed -->
 
-            <!-- ── Headline Lines ────────────────────────────────────── -->
+            <!-- ── Headline ────────────────────────────────────── -->
             <div class="settings-section">
                 <div class="settings-section-hdr">
                     <span class="settings-section-ttl">
                         <i class="fas fa-heading" style="color:var(--secondary)"></i>
-                        Headline Lines
+                        Headline
                     </span>
                     <button type="button" class="btn btn-accent btn-sm" id="aiHeadlineBtn">
                         <i class="fas fa-magic"></i> AI Generate
                     </button>
                 </div>
-                <p class="settings-section-desc">These lines cycle on your homepage with a typewriter effect. Add as many as you like — the AI can generate a set for you.</p>
+                <p class="settings-section-desc">A phrase, a reminder, or a little motivation. Add a few lines to rotate through.</p>
 
                 <div id="headlineLinesList" style="margin-bottom:var(--sp-3);"></div>
 
                 <div class="input-action-row" style="margin-bottom:var(--sp-4);">
                     <input type="text" class="form-input" id="newHeadlineLine"
-                           placeholder="Type a new line and press ＋">
+                           placeholder="Add a phrase…">
                     <button type="button" class="btn btn-secondary btn-icon"
                             id="addHeadlineLineBtn" title="Add line">
                         <i class="fas fa-plus"></i>
@@ -587,20 +572,26 @@
                 </div>
             </div>
 
-            <!-- ── Import / Export ───────────────────────────────────── -->
+            <!-- ── Backup & restore ───────────────────────────────────── -->
             <div class="settings-section">
                 <div class="settings-section-hdr">
                     <span class="settings-section-ttl">
                         <i class="fas fa-file-export" style="color:var(--secondary)"></i>
-                        Import / Export
+                        Backup & restore
                     </span>
                 </div>
-                <p class="settings-section-desc">Back up or restore all your settings as a <code style="font-size:0.75rem;color:var(--primary);">3d-parallax-settings.json</code> file. Wallpaper blob inclusion is optional (increases file size).</p>
+                <p class="settings-section-desc">Download your preferences as a file, or restore a previous backup. Including your wallpaper makes the file larger.</p>
                 <label class="ctrl-toggle" style="margin-bottom:var(--sp-4);">
                     <input type="checkbox" id="exportIncludeWallpaper">
                     <span class="ctrl-toggle-track"></span>
-                    <span class="ctrl-toggle-label">Include wallpaper blob in export</span>
+                    <span class="ctrl-toggle-label">Include the wallpaper file</span>
                 </label>
+                <label class="ctrl-toggle" style="margin-bottom:var(--sp-4);">
+                    <input type="checkbox" id="exportIncludeKeys">
+                    <span class="ctrl-toggle-track"></span>
+                    <span class="ctrl-toggle-label">Include saved API keys</span>
+                </label>
+                <p class="form-hint" style="margin-bottom:16px;">Backups that include API keys should be kept private. Restoring a backup replaces the preferences included in that file.</p>
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" id="exportSettingsBtn"
                             style="flex:1;">
@@ -629,7 +620,7 @@
 
             <!-- Footer -->
             <div class="settings-footer">
-                <p>3D Parallax v2.1.0</p>
+                <p>3D Parallax v2.2.0</p>
                 <p style="color:var(--primary);">Developed by Muhammad Ali Mehdi</p>
             </div>
         </div>
@@ -693,9 +684,6 @@
     <script src="wallpaper.js"></script>
 
     <script src="templates.js"></script>
-    <!-- Vendored MIT libraries (bundled locally — MV3-safe, no remote loading) -->
-    <script src="vendor/lz-string.min.js"></script>
-    <script src="vendor/qrcode-generator.js"></script>
     <!-- Setup backbone + new feature modules -->
     <script src="ambient.js"></script>
     <script src="setup.js"></script>
@@ -705,6 +693,7 @@
     <script src="script.js"></script>
     <script src="interactions.js"></script>
     <script src="feedback.js"></script>
+    <script src="ui.js"></script>
 </body>
 
 </html>

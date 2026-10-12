@@ -25,13 +25,13 @@
 </head>
 <body>
   <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: 2026-06-27 &nbsp;·&nbsp; Extension version: 2.1.0</p>
+  <p class="updated">Last updated: 2026-10-12 &nbsp;·&nbsp; Extension version: 2.2.0</p>
 
   <hr>
 
-  <h2>1. What data we collect</h2>
-  <p><strong>3D Parallax New Tab</strong> does not collect, transmit, or share any personal data with us or any third party.</p>
-  <p>All settings (your name, theme preference, quick links, headline lines, wallpaper image, AI provider keys) are stored <strong>locally on your device only</strong>, using <code>chrome.storage.local</code> and <code>localStorage</code>. This data never leaves your browser.</p>
+  <h2>1. Your local preferences</h2>
+  <p><strong>3D Parallax New Tab</strong> stores your name, themes, shortcuts, headline, layout, notes, tasks, search history, and AI provider keys on your device, using <code>chrome.storage.local</code> and <code>localStorage</code>. Uploaded wallpaper files are stored locally in IndexedDB.</p>
+  <p>The extension does not upload your saved preferences automatically. Optional weather, AI, web-search, wallpaper-search, and feedback features make the network requests described below. Exporting a backup creates a file on your device; saved API keys are excluded unless you choose to include them in the homepage settings.</p>
 
   <h2>2. Permissions we use — and why</h2>
   <ul>
@@ -43,13 +43,16 @@
   <p>The extension may make the following outbound requests on your behalf:</p>
   <ul>
     <li><strong>Open-Meteo</strong> (<code>api.open-meteo.com</code>) — free, open-source weather API. No account or API key required. See their <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">terms</a>.</li>
-    <li><strong>Groq API</strong> (<code>api.groq.com</code>) — used for the AI chat feature only when you provide your own API key and send a message. Your API key is stored locally and sent only to Groq's servers.</li>
-    <li><strong>DuckDuckGo Instant Answer API</strong> — used for the AI web-search feature when toggled on.</li>
+    <li><strong>Groq or your chosen compatible provider</strong> — receives your API key and requests when you use AI chat, AI headlines, AI Makeover, or provider tests. Chat requests include recent messages; styling requests include your style prompt.</li>
+    <li><strong>DuckDuckGo and Wikipedia</strong> — receive your search query when AI web search is enabled. Results may be included in the request to your AI provider.</li>
+    <li><strong>Wallhaven and wallpaper image hosts</strong> — receive wallpaper search terms and image requests when an AI styling or imported setup requests a remote wallpaper.</li>
+    <li><strong>Your selected search engine or shortcut website</strong> — receives the normal browser navigation when you search or open a shortcut.</li>
+    <li><strong>The developer's feedback service</strong> (<code>3-d-parallax-backend.vercel.app</code>) — receives the message, feedback category, optional rating, selected theme, extension version, and timestamp when you submit the feedback form. Network services may also receive normal connection information such as your IP address.</li>
   </ul>
   <p>No tracking pixels, analytics SDKs, or advertising networks are included.</p>
 
   <h2>4. AI provider keys</h2>
-  <p>If you add a Groq API key (or any OpenAI-compatible key), it is stored in <code>chrome.storage.local</code> and never transmitted anywhere except directly to the provider's API endpoint when you send a chat message. You can delete any stored key at any time from the Settings panel inside the extension.</p>
+  <p>If you add an API key, it is stored on this device and sent to the provider endpoint you configure when using or testing AI features. You can remove keys in Settings → AI features. Backup files that you explicitly choose to export with API keys contain those keys; keep such files private.</p>
 
   <h2>5. Children's privacy</h2>
   <p>This extension is not directed at children under 13. We do not knowingly collect information from children.</p>
@@ -58,9 +61,9 @@
   <p>If we make material changes we will update the "Last updated" date above and bump the extension version. Continued use after an update constitutes acceptance of the revised policy.</p>
 
   <h2>7. Contact</h2>
-  <p>For questions or concerns, open an issue on the <a href="https://github.com/YOUR_USERNAME/3d-parallax" target="_blank" rel="noopener">GitHub repository</a>.</p>
+  <p>For questions or concerns, open Settings → Backup &amp; help → Send Feedback in the extension. The publisher's contact information is also available on the Chrome Web Store listing once published.</p>
 
   <hr>
-  <p style="font-size:0.8rem;color:rgba(255,255,255,0.25);text-align:center;">3D Parallax New Tab &nbsp;·&nbsp; v2.1.0 &nbsp;·&nbsp; Developed by Muhammad Ali Mehdi</p>
+  <p style="font-size:0.8rem;color:rgba(255,255,255,0.25);text-align:center;">3D Parallax New Tab &nbsp;·&nbsp; v2.2.0 &nbsp;·&nbsp; Developed by Muhammad Ali Mehdi</p>
 </body>
 </html>

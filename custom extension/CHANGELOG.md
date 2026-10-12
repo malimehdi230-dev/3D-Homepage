@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.2.0] — 2026-10-12
+
+### Changed
+- Use system fonts, compact shortcuts, and a small inline Add link tile.
+- Organize Settings into General, Background, Layout, AI features, and Backup & help.
+- Simplify Customize into Elements, Effects, and Sizes with automatic saving.
+- Bundle icon assets locally and restore visual preferences with an external MV3-compatible script.
+- Exclude API keys from backups unless explicitly selected.
+
+### Added
+- Layout undo, keyboard movement, precise size/position controls, and overlap handling.
+- Weather request caching, timeouts, and retry controls.
+- Automated browser checks for the homepage and the loaded extension.
+
+### Fixed
+- Opening Settings, switching to the centered layout, restoring hidden widgets, and syncing shortcuts between layouts.
+- Shortcut URL validation, unlimited shortcut rendering, popup name/theme counts, and native provider storage on import.
+- Send feedback to `/api/feedback` and show a readable error if the service is unavailable.
+
 ## [2.1.0] — 2026-06-27
 
 ### Added

@@ -544,6 +544,7 @@ class HomepageApp {
         this.applyTemplate(this.currentTemplate);
 
         this.renderLinks();
+        this.saveLinks();
         this.initTime();
         this.initTyping();
         this.initSearch();
@@ -611,6 +612,8 @@ class HomepageApp {
                     document.body.appendChild(panel);
                 }
                 panel.classList.toggle('open');
+                customizeBtn.setAttribute('aria-expanded', String(panel.classList.contains('open')));
+                if (panel.classList.contains('open')) panel.querySelector('[data-cp-tab="0"]')?.click();
             });
         }
 
@@ -627,6 +630,8 @@ class HomepageApp {
                 }
             });
         });
+
+        ['linkName', 'linkUrl'].forEach(id => document.getElementById(id)?.addEventListener('input', e => e.target.setCustomValidity('')));
 
         // Form submissions
         const linkForm = document.getElementById('linkForm');
@@ -1009,10 +1014,10 @@ class HomepageApp {
         if (!grid) return;
 
         grid.innerHTML = this.links.map((link, index) => `
-            <a href="${this._esc(link.url)}" class="link-card"
+            <a href="${/^https?:\/\//i.test(link.url) ? this._esc(link.url) : '#'}" class="link-card"
                style="--card-color: ${this._esc(link.color)}; --card-glow: ${this._esc(link.color)}40;"
                draggable="true" data-index="${index}">
-                <button class="remove-btn" data-index="${index}">
+                <button class="remove-btn" data-index="${index}" aria-label="Remove ${this._esc(link.name)}">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="link-icon-wrapper">
@@ -1023,7 +1028,7 @@ class HomepageApp {
         `).join('');
 
         // Add event listeners to remove buttons
-        document.querySelectorAll('.remove-btn').forEach(btn => {
+        grid.querySelectorAll('.remove-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1032,8 +1037,12 @@ class HomepageApp {
             });
         });
 
-        // Drag-to-reorder quick links
+        const add = document.createElement('button');
+        add.type = 'button'; add.className = 'shortcut-add'; add.setAttribute('aria-label', 'Add a shortcut');
+        add.innerHTML = '<i class="fas fa-plus" aria-hidden="true"></i><span>Add link</span>';
+        add.addEventListener('click', () => this.openLinkModal()); grid.appendChild(add);
         this._initLinkDrag(grid);
+        document.dispatchEvent(new Event('links-changed'));
     }
 
     _initLinkDrag(grid) {
@@ -1073,6 +1082,7 @@ class HomepageApp {
     }
 
     removeLink(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= this.links.length) return;
         this.links.splice(index, 1);
         this.saveLinks();
         this.renderLinks();
@@ -1109,7 +1119,6 @@ class HomepageApp {
 
             // Render dynamic sections every time the modal opens
             this.renderAIProviders();
-            this.renderPackGrid();
             this.renderHeadlineLines();
             this._updateWpThumbnail();
 
@@ -1234,20 +1243,33 @@ class HomepageApp {
 
     handleAddLink(event) {
         event.preventDefault();
-        const name = document.getElementById('linkName').value;
-        const url = document.getElementById('linkUrl').value;
+        const nameInput = document.getElementById('linkName');
+        const urlInput = document.getElementById('linkUrl');
+        const name = nameInput.value.trim();
+        const raw = urlInput.value.trim();
+        let url;
+        try {
+            const parsed = new URL(/^[a-z][a-z\d+.-]*:/i.test(raw) ? raw : 'https://' + raw);
+            if (!['https:', 'http:'].includes(parsed.protocol) || !parsed.hostname || /\s/.test(raw)) throw new Error('Invalid URL');
+            url = parsed.href;
+        } catch {
+            urlInput.setCustomValidity('Enter a valid website address, such as example.com.');
+            urlInput.reportValidity(); return;
+        }
+        if (!name) { nameInput.setCustomValidity('Give your shortcut a name.'); nameInput.reportValidity(); return; }
+        nameInput.setCustomValidity(''); urlInput.setCustomValidity('');
         this.addLink(name, url, this.selectedIcon, this.selectedColor);
-        this.closeAllModals();
+        document.getElementById('linkModal').classList.remove('active');
         document.getElementById('linkForm').reset();
         window.toast?.(`Link "${this._esc(name)}" added.`, 'success', 2000);
     }
 
     handleSaveSettings(event) {
         event.preventDefault();
-        const name = document.getElementById('settingsName').value;
+        const name = document.getElementById('settingsName').value.trim();
+        if (!name) return;
         this.updateUserName(name);
-        this.closeAllModals();
-        window.toast?.('Settings saved.', 'success', 2000);
+        window.toast?.('Name saved.', 'success', 2000);
     }
 
     // Time
@@ -1946,6 +1968,7 @@ class HomepageApp {
         let _lastMatrix = 0;
         const draw = (ts) => {
             requestAnimationFrame(draw);
+            if (document.hidden || document.body.classList.contains('fx-matrix-off') || document.body.classList.contains('wp-static') || document.body.classList.contains('wp-video')) return;
             if (ts - _lastMatrix < 50) return;
             _lastMatrix = ts;
             ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
@@ -2028,18 +2051,19 @@ class HomepageApp {
     initKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             const active = document.activeElement;
-            const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+            const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
 
             if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && !isTyping) {
                 e.preventDefault();
-                document.getElementById('searchInput')?.focus();
+                const search = document.querySelector('#widgetCanvas .wb-search-input') || document.getElementById('searchInput');
+                search?.focus();
                 return;
             }
             if (e.key === 'Escape') {
                 this.closeAllModals();
                 return;
             }
-            if (isTyping) return;
+            if (isTyping || document.querySelector('.modal-overlay.active, #widgetSettingsPop') || e.ctrlKey || e.metaKey || e.altKey) return;
 
             if (e.key === 'T' || e.key === 't') { this.openTemplateModal(); return; }
             if (e.key === 'S' || e.key === 's') { this.openSettingsModal(); return; }
@@ -2070,6 +2094,7 @@ class HomepageApp {
             nameEl.setAttribute('data-text', name);
         }
         this.refreshGreeting();
+        document.dispatchEvent(new Event('name-changed'));
     }
 
     // ── Weather + greeting ───────────────────────────────────────────────
@@ -2255,8 +2280,10 @@ class HomepageApp {
 
     async exportSettings() {
         const data = {};
+        const includeKeys = document.getElementById('exportIncludeKeys')?.checked;
         for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
+            if (k === 'homepage_ai_providers' && !includeKeys) continue;
             if (k && k.startsWith('homepage_')) data[k] = localStorage.getItem(k);
         }
 
@@ -2283,7 +2310,7 @@ class HomepageApp {
         try { data = JSON.parse(await file.text()); }
         catch { window.toast?.('Could not parse settings file — invalid JSON.', 'error'); return; }
 
-        if (!Object.keys(data).some(k => k.startsWith('homepage_'))) {
+        if (!data || typeof data !== 'object' || Array.isArray(data) || !Object.keys(data).some(k => k.startsWith('homepage_'))) {
             window.toast?.("This file doesn't look like a 3D Homepage settings export.", 'error');
             return;
         }
@@ -2291,7 +2318,18 @@ class HomepageApp {
         for (const [k, v] of Object.entries(data)) {
             if (k.startsWith('homepage_') && typeof v === 'string') {
                 localStorage.setItem(k, v);
+                if (typeof chrome !== 'undefined' && chrome?.storage?.local) chrome.storage.local.set({ [k]: v });
             }
+        }
+
+        if (typeof data.homepage_ai_providers === 'string') {
+            try {
+                const providers = JSON.parse(data.homepage_ai_providers);
+                if (Array.isArray(providers)) {
+                    for (const provider of await AIProviders.getAll()) await AIProviders.remove(provider.id);
+                    for (const provider of providers) if (provider && typeof provider.apiKey === 'string') await AIProviders.add(provider);
+                }
+            } catch { window.toast?.('API keys could not be restored.', 'error'); }
         }
 
         if (data['__wallpaper_blob__'] && data['__wallpaper_type__']) {
@@ -2490,7 +2528,7 @@ class HomepageApp {
         try { providers = await AIProviders.getAll(); } catch { return; }
 
         if (!providers.length) {
-            container.innerHTML = '<div class="no-providers-msg"><i class="fas fa-plus-circle" style="margin-right:6px;opacity:0.5;"></i>No providers yet — click "Add Key" to get started.</div>';
+            container.innerHTML = '<div class="no-providers-msg">No providers connected yet.<br>Add an API key above to enable AI features.</div>';
             return;
         }
 
@@ -2587,113 +2625,7 @@ class HomepageApp {
 
     // ── Customization Panel (slide-up) ───────────────────────────────────────
     _buildCustomizationPanel() {
-        const panel = document.createElement('div');
-        panel.id = 'customizationPanel';
-        panel.className = 'customizationPanel';
-
-        const EFFECTS = [
-            { id: 'matrix',    label: 'Matrix Rain',     key: 'homepage_matrixEnabled',   default: true },
-            { id: 'particles', label: 'Particles',       key: 'homepage_particlesEnabled', default: true },
-            { id: 'aurora',    label: 'Aurora Glow',     key: 'homepage_auroraEnabled',    default: true },
-            { id: 'cube3d',    label: '3D Cube',         key: 'homepage_cube3dEnabled',    default: true },
-            { id: 'typewriter',label: 'Typewriter',      key: 'homepage_headline_typewriter', default: true },
-        ];
-
-        const rows = EFFECTS.map(fx => {
-            const val = localStorage.getItem(fx.key);
-            const checked = val === null ? fx.default : val !== '0';
-            return `<div class="customize-panel-row">
-                <label for="cp-${fx.id}">${fx.label}</label>
-                <label class="ctrl-toggle">
-                    <input type="checkbox" id="cp-${fx.id}" data-key="${fx.key}" ${checked ? 'checked' : ''}>
-                    <span class="ctrl-toggle-track"></span>
-                </label>
-            </div>`;
-        }).join('');
-
-        const SIZE_SLIDERS = [
-            { label: 'Clock size', id: 'cpClockSize', lsKey: 'homepage_custom_clock_size', min: 2, max: 10, step: 0.1, unit: 'rem', cssVar: '--custom-clock-size', suffix: 'rem' },
-            { label: 'Name size', id: 'cpNameSize',   lsKey: 'homepage_custom_name_size',  min: 1, max: 5,  step: 0.1, unit: 'rem', cssVar: '--custom-name-size',  suffix: 'rem' },
-            { label: 'Headline size', id: 'cpHeadlineSize', lsKey: 'homepage_custom_headline_size', min: 1, max: 4, step: 0.1, unit: 'rem', cssVar: '--custom-headline-size', suffix: 'rem' },
-            { label: 'Search height', id: 'cpSearchH', lsKey: 'homepage_custom_search_height', min: 36, max: 72, step: 2, unit: 'px', cssVar: '--custom-search-height', suffix: 'px' },
-            { label: 'Search width', id: 'cpSearchW',  lsKey: 'homepage_custom_search_width', min: 280, max: 900, step: 10, unit: 'px', cssVar: '--custom-search-width', suffix: 'px' },
-            { label: 'Search radius', id: 'cpSearchR', lsKey: 'homepage_custom_search_radius', min: 0, max: 36, step: 1, unit: 'px', cssVar: '--custom-search-radius', suffix: 'px' },
-            { label: 'Weather size', id: 'cpWeatherSize', lsKey: 'homepage_custom_weather_size', min: 0.7, max: 2, step: 0.05, unit: 'rem', cssVar: '--custom-weather-size', suffix: 'rem' },
-            { label: '3D scene scale', id: 'cpSceneScale', lsKey: 'homepage_custom_scene_scale', min: 50, max: 150, step: 5, unit: '%', cssVar: '--custom-scene-scale', suffix: '' },
-        ];
-
-        const sliderRows = SIZE_SLIDERS.map(s => {
-            const saved = localStorage.getItem(s.lsKey);
-            const defVal = saved !== null ? parseFloat(saved) : (s.min + (s.max - s.min) / 2);
-            const displayVal = s.unit === '%' ? (saved || '100') + '%' : (saved || defVal) + s.unit;
-            return `<div class="custom-slider-row">
-                <label class="custom-slider-label">${s.label}</label>
-                <div class="custom-slider-wrap">
-                    <input type="range" class="custom-slider cp-size-slider" id="${s.id}"
-                           min="${s.min}" max="${s.max}" step="${s.step}" value="${saved || defVal}"
-                           data-ls-key="${s.lsKey}" data-css-var="${s.cssVar}" data-unit="${s.unit}" data-suffix="${s.suffix}">
-                    <span class="custom-slider-value" id="${s.id}Val">${displayVal}</span>
-                </div>
-            </div>`;
-        }).join('');
-
-        panel.innerHTML = `
-            <div class="customize-panel-header">
-                <span><i class="fas fa-wand-magic-sparkles"></i> Customize</span>
-                <button class="customize-panel-close" id="cpCloseBtn" title="Close">✕</button>
-            </div>
-            ${rows}
-            <div class="custom-slider-section-label">Element Sizes</div>
-            ${sliderRows}
-        `;
-
-        // Bind toggles
-        panel.querySelectorAll('input[type=checkbox][data-key]').forEach(cb => {
-            cb.addEventListener('change', () => {
-                localStorage.setItem(cb.dataset.key, cb.checked ? '1' : '0');
-                // Live apply for matrix
-                if (cb.id === 'cp-matrix') {
-                    const canvas = document.getElementById('matrixCanvas');
-                    if (canvas) canvas.style.display = cb.checked ? '' : 'none';
-                }
-                // Live apply for aurora
-                if (cb.id === 'cp-aurora') {
-                    const el = document.querySelector('.aurora');
-                    if (el) el.style.opacity = cb.checked ? '' : '0';
-                }
-                // Live apply for particles
-                if (cb.id === 'cp-particles') {
-                    const el = document.querySelector('.particles-container, canvas.particles');
-                    if (el) el.style.display = cb.checked ? '' : 'none';
-                }
-            });
-        });
-
-        // Bind size sliders
-        panel.querySelectorAll('.cp-size-slider').forEach(slider => {
-            const valEl = document.getElementById(slider.id + 'Val');
-            slider.addEventListener('input', () => {
-                const v = slider.value;
-                const unit = slider.dataset.unit;
-                const suffix = slider.dataset.suffix;
-                const cssVar = slider.dataset.cssVar;
-                const lsKey = slider.dataset.lsKey;
-                const display = unit === '%' ? v + '%' : v + unit;
-                if (valEl) valEl.textContent = display;
-                localStorage.setItem(lsKey, v);
-                document.documentElement.style.setProperty(cssVar, v + suffix + (unit !== '%' && suffix === '' ? '' : ''));
-                // For scene scale, special case: value stored as percent number, CSS var expects percent number
-                if (cssVar === '--custom-scene-scale') {
-                    document.documentElement.style.setProperty(cssVar, v);
-                }
-            });
-        });
-
-        panel.querySelector('#cpCloseBtn')?.addEventListener('click', () => {
-            panel.classList.remove('open');
-        });
-
-        return panel;
+        return HomepageUI.buildCustomizePanel(this);
     }
 
     // Safe HTML escaping
@@ -2726,7 +2658,7 @@ window.toast = (msg, type = 'info', duration = 3000) => {
         transition:transform 0.3s ease;font-family:Inter,sans-serif;font-size:0.875rem;color:rgba(255,255,255,0.9);position:relative;overflow:hidden;`;
     t.innerHTML = `<i class="fas ${ICONS[type]||ICONS.info}" style="color:${color};flex-shrink:0;"></i>
         <span style="flex:1;">${String(msg).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-        <button style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:1rem;padding:0;line-height:1;" onclick="this.closest('div[style]').remove()">✕</button>
+        <button style="background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:1rem;padding:0;line-height:1;" data-toast-close>✕</button>
         <div class="toast-bar" style="position:absolute;bottom:0;left:0;height:2px;background:${color};width:100%;transform-origin:left;animation:toastBar ${duration}ms linear forwards;"></div>`;
     if (!document.getElementById('toast-keyframes')) {
         const s = document.createElement('style');
