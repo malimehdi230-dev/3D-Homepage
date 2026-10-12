@@ -344,8 +344,13 @@ const Wallpaper = (() => {
     if (!on && _el) _el.style.transform = 'scale(1.08)';
   }
 
+  async function clearAll() {
+    await clear();
+    await _del(KEY_BAK);
+  }
+
   return {
-    init, setFromFile, setFromUrl, setFromRemoteUrl, restore, clear,
+    init, setFromFile, setFromUrl, setFromRemoteUrl, restore, clear, clearAll,
     applySettings, getSettings, getBlob, getSource, backup, restoreFromBackup,
     extractPalette, applyPaletteToTheme, enableParallax
   };

@@ -1,3 +1,7 @@
+## Chrome extension 2.3.0
+
+The extension in [custom extension](custom%20extension) now scales content when resizing widgets, has tighter spacing, clearer element switches, optional city weather and complete reset/backup controls. See the [release notes](custom%20extension/RELEASE.md) and [Chrome Web Store submission kit](store-kit/README.md).
+
 # 🎮 3D Homepage - Chrome Extension
 
 ![Version](https://img.shields.io/badge/version-3.0.0-blue)

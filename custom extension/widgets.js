@@ -26,6 +26,10 @@ const WidgetCanvas = (() => {
   const _history = [];
   let _settingsCleanup = null;
   const _weatherCache = new Map();
+  const _measure = document.createElement('canvas').getContext('2d');
+  const _contentObserver = new ResizeObserver(entries => {
+    entries.forEach(({ target }) => _sizeContent(target));
+  });
 
   function _remember() {
     _history.push(JSON.stringify(_layout));
@@ -66,8 +70,8 @@ const WidgetCanvas = (() => {
     { widget: 'date',       x: 4, y: 1, w: 4,  h: 1, props: {} },
     { widget: 'weather',    x: 8, y: 1, w: 4,  h: 2, props: {} },
     { widget: 'headline',   x: 4, y: 2, w: 4,  h: 1, props: {} },
-    { widget: 'search',     x: 0, y: 3, w: 12, h: 1, props: {} },
-    { widget: 'quicklinks', x: 0, y: 4, w: 12, h: 2, props: {} }
+    { widget: 'search',     x: 2, y: 3, w: 8, h: 1, props: {} },
+    { widget: 'quicklinks', x: 2, y: 4, w: 8, h: 2, props: {} }
   ];
 
   // ── Storage ─────────────────────────────────────────────────────────────
@@ -137,6 +141,7 @@ const WidgetCanvas = (() => {
   // ── Render all widget cards ───────────────────────────────────────────────
   function _renderWidgets() {
     if (!_canvas || !_layout) return;
+    _contentObserver.disconnect();
     _canvas.innerHTML = '';
     _canvas.classList.toggle('editing', _edit);
 
@@ -179,6 +184,7 @@ const WidgetCanvas = (() => {
 
       _canvas.appendChild(card);
       _renderWidgetBody(card.querySelector('.widget-body'), item);
+      _contentObserver.observe(card.querySelector('.widget-body'));
 
       if (_edit) _wireEdit(card, item);
       // Wire non-edit add-link pill for quicklinks
@@ -197,6 +203,56 @@ const WidgetCanvas = (() => {
     card.style.height = (item.h * ROWH + (item.h - 1) * GAP) + 'px';
   }
 
+  // Measure the usable body, excluding the edit header and padding. The same
+  // calculation runs during pointer resizing, after settings changes and on load.
+  function _sizeContent(el) {
+    if (!el?.isConnected) return;
+    const item = _layout?.find(i => i.id === el.closest('.widget-card')?.dataset.id);
+    if (!item) return;
+    const style = getComputedStyle(el);
+    const width = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const height = el.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    if (width <= 0 || height <= 0) return;
+    const scale = _clamp(Number(item.props?.contentScale) || 100, 50, 150) / 100;
+    const defaults = { clock: ['clock_size', 3.2], name: ['name_size', 3.6], headline: ['headline_size', 1], weather: ['weather_size', 1.25] };
+    const setting = defaults[item.widget];
+    const preference = setting ? (Number(localStorage.getItem('homepage_custom_' + setting[0])) || setting[1]) / setting[1] : 1;
+    el.style.setProperty('--widget-body-height', height + 'px');
+    const factors = { clock: .86, date: .62, greeting: .56, name: .8, headline: .55, weather: .58, countdown: .58 };
+    if (factors[item.widget]) {
+      let text = el.textContent.trim();
+      if (item.widget === 'headline') text = (window.app?.roles || ['Welcome']).reduce((a,b) => a.length > b.length ? a : b, '');
+      if (item.widget === 'weather') text = '☀ −100°F';
+      const target = el.querySelector('.name-title, .subtitle, .wb-weather-inner') || el;
+      const font = getComputedStyle(target);
+      _measure.font = `${font.fontWeight} 100px ${font.fontFamily}`;
+      const textWidth = Math.max(1, _measure.measureText(text).width);
+      const availableHeight = item.widget === 'weather' ? Math.max(10, height - 14) : height;
+      const wanted = availableHeight * factors[item.widget] * scale * preference;
+      // Long names, 12-hour clocks with seconds and translated dates still fit.
+      const size = Math.max(10, Math.min(wanted, width * 98 / textWidth, availableHeight / 1.35));
+      el.style.setProperty('--widget-font', size + 'px');
+    }
+    if (item.widget === 'search') {
+      const size = Math.max(12, Math.min(height * .4 * scale, width / 18, 44));
+      el.style.setProperty('--widget-font', size + 'px');
+    }
+    if (item.widget === 'quicklinks') {
+      const count = Math.min(8, (window.app?.links.length || 0) + 1);
+      const widthLimit = Math.max(48, (width - (count - 1) * 10) / count);
+      const cardHeight = Math.max(24, Math.min(height, Math.sqrt(width * height / count) * scale, widthLimit / .85, 220));
+      el.classList.toggle('links-compact', height < 55);
+      el.style.setProperty('--shortcut-height', cardHeight + 'px');
+      el.style.setProperty('--shortcut-width', Math.max(48, cardHeight * .85) + 'px');
+      el.style.setProperty('--shortcut-icon', Math.max(12, cardHeight * .43) + 'px');
+      el.style.setProperty('--shortcut-label', Math.max(10, Math.min(20, cardHeight * .12)) + 'px');
+    }
+    if (['todo','notes','ambient','askai'].includes(item.widget)) {
+      el.style.setProperty('--widget-font', Math.max(12, Math.min(24, Math.sqrt(width * height) / 18 * scale)) + 'px');
+    }
+    el.classList.toggle('widget-small', height < 60);
+  }
+
   // ── Widget body renderers ─────────────────────────────────────────────────
   function _renderWidgetBody(el, item) {
     if (!el) return;
@@ -206,8 +262,8 @@ const WidgetCanvas = (() => {
         case 'clock':    el.className = 'widget-body wb-clock'; el.dataset.fmt = p.format || '24'; el.dataset.sec = p.seconds ? '1' : '0'; _tickClock(el); break;
         case 'date':     el.className = 'widget-body wb-date'; el.dataset.long = p.long ? '1' : '0'; _tickDate(el); break;
         case 'greeting': el.className = 'widget-body wb-greeting'; el.innerHTML = `<span>${_esc(_greetingText(p))}</span>`; break;
-        case 'name':     el.className = 'widget-body wb-name'; el.innerHTML = `<div class="name-container" style="position:static; transform:none; width:100%;"><h1 class="name-title" id="wbUserName" data-text="${_esc(p.name || (window.app && window.app.userName) || 'YOUR NAME')}">${_esc(p.name || (window.app && window.app.userName) || 'YOUR NAME')}</h1><div class="name-shadow"></div></div>`; break;
-        case 'headline': el.className = 'widget-body wb-headline'; el.innerHTML = `<p class="subtitle" style="margin:0;"><span class="typing-text"></span></p>`; break;
+        case 'name':     el.className = 'widget-body wb-name'; el.innerHTML = `<div class="name-container" style="position:static; transform:none; width:100%;"><h1 class="name-title" id="wbUserName" data-text="${_esc(_nameText(p))}">${_esc(_nameText(p))}</h1><div class="name-shadow"></div></div>`; break;
+        case 'headline': el.className = 'widget-body wb-headline'; el.innerHTML = `<p class="subtitle" style="margin:0;"><span class="typing-text">${_esc(_headlineText())}</span></p>`; break;
         case 'search':   _mountSearch(el, p); break;
         case 'quicklinks': _mountLinks(el); break;
         case 'weather':  _mountWeather(el, p); break;
@@ -217,9 +273,14 @@ const WidgetCanvas = (() => {
         case 'ambient':  _mountAmbient(el); break;
         case 'askai':    _mountAskAI(el); break;
       }
+      _sizeContent(el);
     } catch (e) { console.warn('[WidgetCanvas] render', item.widget, e); }
   }
 
+  function _nameText(p) {
+    const name = p.name || window.app?.userName || '';
+    return !name || name === 'YOUR NAME' ? 'Welcome' : name;
+  }
   function _greetingText(p) {
     const h = new Date().getHours();
     const part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
@@ -240,13 +301,17 @@ const WidgetCanvas = (() => {
     let suffix = '';
     if (el.dataset.fmt === '12') { suffix = h >= 12 ? ' PM' : ' AM'; h = h % 12 || 12; }
     const hh = el.dataset.fmt === '12' ? h : String(h).padStart(2, '0');
-    el.textContent = el.dataset.sec === '1' ? `${hh}:${m}:${s}${suffix}` : `${hh}:${m}${suffix}`;
+    if (!el.firstElementChild) el.appendChild(Object.assign(document.createElement('span'), { className: 'widget-value' }));
+    el.firstElementChild.textContent = el.dataset.sec === '1' ? `${hh}:${m}:${s}${suffix}` : `${hh}:${m}${suffix}`;
+    _sizeContent(el);
   }
   function _tickDate(el) {
     const now = new Date();
-    el.textContent = el.dataset.long === '1'
+    if (!el.firstElementChild) el.appendChild(Object.assign(document.createElement('span'), { className: 'widget-value' }));
+    el.firstElementChild.textContent = el.dataset.long === '1'
       ? now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
       : now.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    _sizeContent(el);
   }
   function _startClock() {
     _stopClock();
@@ -305,22 +370,34 @@ const WidgetCanvas = (() => {
     // Allow horizontal scroll in the containing widget-card
     const wCard = el.closest('.widget-card');
     if (wCard) wCard.classList.add('has-links');
+    _sizeContent(el);
   }
   function _mountWeather(el, p) {
     el.className = 'widget-body wb-weather';
     el.innerHTML = `<div class="wb-weather-inner"><i class="fas fa-cloud-sun"></i> <span>Loading weather…</span></div>`;
     const units = p.units === 'f' ? 'fahrenheit' : 'celsius';
     const unitSym = p.units === 'f' ? '°F' : '°C';
-    const show = data => { el.innerHTML = `<div class="wb-weather-inner"><i class="fas ${_wxIcon(data.code)}"></i><span>${Math.round(data.temp)}${unitSym}</span></div>`; };
-    const error = reason => {
-      el.innerHTML = `<div class="wb-weather-error"><span>${_esc(reason)}</span><button type="button" class="btn btn-secondary btn-sm">Try again</button></div>`;
-      el.querySelector('button').onclick = () => { _weatherCache.delete(units); _mountWeather(el,p); };
+    const show = data => {
+      if (!el.isConnected || !window.WeatherAccess.enabled()) return;
+      el.innerHTML = `<div class="wb-weather-readout"><div class="wb-weather-inner"><i class="fas ${_wxIcon(data.code)}"></i><span>${Math.round(data.temp)}${unitSym}</span></div><a class="weather-credit" href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></div>`;
+      _sizeContent(el);
     };
-    if (!navigator.geolocation) { error('Location is unavailable in this browser.'); return; }
+    const error = reason => {
+      if (!el.isConnected || !window.WeatherAccess.enabled()) return;
+      el.innerHTML = `<div class="wb-weather-error"><span>${_esc(reason)}</span><button type="button" class="btn btn-secondary btn-sm">Try again</button></div>`;
+      el.querySelector('button').onclick = () => { _weatherCache.delete(units); window.WeatherAccess.enable(); };
+    };
+    if (!window.WeatherAccess.enabled()) {
+      el.innerHTML = '<div class="wb-weather-error"><span>A forecast for your city</span><button type="button" class="btn btn-secondary btn-sm">Choose city</button><small>No device location access.</small></div>';
+      el.querySelector('button').onclick = () => {
+        window.WeatherAccess.enable();
+      };
+      return;
+    }
     let cached = _weatherCache.get(units);
     if (!cached || Date.now() - cached.time > 30 * 60 * 1000) {
       const promise = new Promise((resolve,reject) => {
-        navigator.geolocation.getCurrentPosition(async pos => {
+        window.WeatherAccess.position(async pos => {
           try {
             const { latitude, longitude } = pos.coords;
             const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${units}`, { signal: AbortSignal.timeout(8000) });
@@ -329,7 +406,7 @@ const WidgetCanvas = (() => {
             if (!Number.isFinite(d.current?.temperature_2m)) throw new Error('Weather is temporarily unavailable.');
             resolve({ temp: d.current.temperature_2m, code: d.current.weather_code });
           } catch { reject(new Error('Could not load weather. Check your connection.')); }
-        }, e => reject(new Error(e.code === 1 ? 'Allow location in your browser to see weather.' : 'Could not find your location.')), { timeout: 8000, maximumAge: 30 * 60 * 1000 });
+        }, () => reject(new Error('Choose a city to see weather.')));
       });
       cached = { time: Date.now(), promise }; _weatherCache.set(units,cached);
     }
@@ -385,6 +462,7 @@ const WidgetCanvas = (() => {
     const m = Math.floor(diff / 6e4); diff -= m * 6e4;
     const s = Math.floor(diff / 1e3);
     el.innerHTML = `<div class="wb-cd-label">${_esc(label)}</div><div class="wb-cd-time">${d}d ${h}h ${m}m ${s}s</div>`;
+    _sizeContent(el);
   }
   function _mountAskAI(el) {
     el.className = 'widget-body widget-askai-inner';
@@ -561,6 +639,7 @@ const WidgetCanvas = (() => {
         break;
       case 'weather':
         html += _row('Units', `<select data-k="units"><option value="c"${p.units !== 'f' ? ' selected' : ''}>Celsius</option><option value="f"${p.units === 'f' ? ' selected' : ''}>Fahrenheit</option></select>`);
+        html += `<p class="wsp-note">${_esc(WeatherAccess.city()?.name || 'No city selected')}</p><button type="button" class="btn btn-secondary wsp-city">Change city</button>`;
         break;
       case 'countdown':
         html += _row('Label', `<input type="text" data-k="label" value="${_esc(p.label || '')}" placeholder="e.g. New Year">`);
@@ -579,6 +658,11 @@ const WidgetCanvas = (() => {
         html += `<p class="wsp-note">You can adjust this widget's size and position below.</p>`;
     }
     const def = WIDGETS[item.widget];
+    if (WIDGETS[item.widget]) {
+      html += `<div class="wsp-section"><div class="wsp-section-title">Content size</div><p class="wsp-note">Content scales with the widget. Fine-tune it here.</p>`;
+      html += _row('Scale', `<span class="wsp-scale"><input type="range" data-k="contentScale" min="50" max="150" step="5" value="${_clamp(Number(p.contentScale) || 100,50,150)}" aria-label="Content scale"><output>${_clamp(Number(p.contentScale) || 100,50,150)}%</output></span>`);
+      html += '</div>';
+    }
     html += `<div class="wsp-section"><div class="wsp-section-title">Size & position</div>`;
     html += _row('Width (columns)', `<input type="number" data-layout="w" min="${def.minW}" max="${def.maxW}" value="${item.w}">`);
     html += _row('Height (rows)', `<input type="number" data-layout="h" min="${def.minH}" max="${def.maxH}" value="${item.h}">`);
@@ -595,6 +679,8 @@ const WidgetCanvas = (() => {
     pop.querySelector('.wsp-close').onclick = close;
     pop.querySelector('.wsp-headline')?.addEventListener('click', () => { close(); window.HomepageUI?.openSettings('general'); });
     pop.querySelector('.wsp-add-link')?.addEventListener('click', () => { close(); window.app?.openLinkModal(); });
+    pop.querySelector('.wsp-city')?.addEventListener('click', () => { close(); WeatherAccess.chooseCity(); });
+    pop.querySelector('[data-k=contentScale]')?.addEventListener('input', e => { e.target.nextElementSibling.value = e.target.value + '%'; });
     pop.querySelector('.wsp-done').onclick = () => {
       _remember();
       pop.querySelectorAll('[data-k]').forEach(inp => {
@@ -602,10 +688,10 @@ const WidgetCanvas = (() => {
         p[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
       });
       const value = key => Number(pop.querySelector(`[data-layout="${key}"]`).value);
-      item.w = _clamp(value('w') || def.w, def.minW, def.maxW);
-      item.h = _clamp(value('h') || def.h, def.minH, def.maxH);
-      item.x = _clamp((value('x') || 1) - 1, 0, COLS - item.w);
-      item.y = _clamp((value('y') || 1) - 1, 0, 99);
+      item.w = _clamp(Math.round(value('w')) || def.w, def.minW, def.maxW);
+      item.h = _clamp(Math.round(value('h')) || def.h, def.minH, def.maxH);
+      item.x = _clamp(Math.round(value('x') || 1) - 1, 0, COLS - item.w);
+      item.y = _clamp(Math.round(value('y') || 1) - 1, 0, 99);
       _resolveOverlap(item); _save(); _renderWidgets(); close();
     };
     (pop.querySelector('select, input') || pop.querySelector('.wsp-close')).focus();
@@ -655,6 +741,18 @@ const WidgetCanvas = (() => {
     _layout = DEFAULT_LAYOUT.map(i => ({ ...i, id: _uid(), props: { ...i.props } }));
     _save(); _renderWidgets();
   }
+  function compactLayout() {
+    if (!_layout) return;
+    _remember();
+    const placed = [];
+    [..._layout].filter(i => !i.hidden).sort((a,b) => a.y - b.y || a.x - b.x).forEach(item => {
+      let y = 0;
+      while (placed.some(other => item.x < other.x + other.w && item.x + item.w > other.x && y < other.y + other.h && y + item.h > other.y)) y++;
+      item.y = y; placed.push(item);
+    });
+    _save(); _renderWidgets();
+    window.toast?.('Gaps removed. Undo to restore your arrangement.', 'success', 2000);
+  }
   function useClassic() {
     _remember();
     _layout = null; _save(); exitEdit(); _renderView();
@@ -689,6 +787,7 @@ const WidgetCanvas = (() => {
     document.getElementById('widgetResetBtn')?.addEventListener('click', resetLayout);
     document.getElementById('widgetClassicBtn')?.addEventListener('click', useClassic);
     document.getElementById('widgetUndoBtn')?.addEventListener('click', undo);
+    document.getElementById('widgetCompactBtn')?.addEventListener('click', compactLayout);
     document.getElementById('widgetElementsBtn')?.addEventListener('click', () => document.getElementById('customizeBtn').click());
 
     // Add-widget menu
@@ -713,6 +812,14 @@ const WidgetCanvas = (() => {
     // Re-render widgets when underlying data changes
     document.addEventListener('ambient-changed', () => { if (_layout && !_edit) _canvas?.querySelectorAll('.wb-ambient').forEach(el => _mountAmbient(el)); });
     document.addEventListener('links-changed', () => _canvas?.querySelectorAll('.wb-links').forEach(_mountLinks));
+    document.addEventListener('sizes-changed', () => _canvas?.querySelectorAll('.widget-body').forEach(_sizeContent));
+    document.addEventListener('weather-changed', () => {
+      _weatherCache.clear();
+      _canvas?.querySelectorAll('.wb-weather').forEach(el => {
+        const item = _layout?.find(i => i.id === el.closest('.widget-card').dataset.id);
+        if (item) _mountWeather(el, item.props || {});
+      });
+    });
     document.addEventListener('name-changed', () => {
       if (!_layout) return;
       _layout.filter(i => i.widget === 'greeting' || i.widget === 'name').forEach(i => _renderWidgetBody(_canvas.querySelector(`[data-id="${i.id}"] .widget-body`), i));
@@ -727,6 +834,6 @@ const WidgetCanvas = (() => {
     _renderView();
   }
 
-  return { init, getLayout, applyLayout, enterEdit, exitEdit, toggleEdit, resetLayout, useClassic, undo, listItems, toggleVisibility, openSettings, DEFAULT_LAYOUT };
+  return { init, getLayout, applyLayout, enterEdit, exitEdit, toggleEdit, resetLayout, compactLayout, useClassic, undo, listItems, toggleVisibility, openSettings, DEFAULT_LAYOUT };
 })();
 window.WidgetCanvas = WidgetCanvas;

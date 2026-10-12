@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.3.0] — 2026-10-13
+
+- Scale actual widget text, shortcut icons and search controls during resizing; fit long content and add per-widget content scale.
+- Tighten headers and padding, narrow default search/links widgets, and add Tidy up with Undo.
+- Use consistent element visibility switches and fix static widget headlines.
+- Make weather opt-in with a city chooser and a disable control, without device location access.
+- Repair popup backup, reset and ambient actions; add complete local reset with confirmation.
+- Add calm first-install defaults, accessible feedback focus, support/privacy links, and remove automatic feedback prompts.
+- Add store listing copy, disclosures, screenshots, promotional images, a public policy and reproducible packaging.
+
 ## [2.2.0] — 2026-10-12
 
 ### Changed

@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 linksContainer.innerHTML = '<div style="font-size:0.78rem;color:rgba(255,255,255,0.3);padding:4px 0;">No links saved yet.</div>';
             } else {
                 linksContainer.innerHTML = links.slice(0, 8).map(link => `
-                    <a href="${_esc(link.url)}" class="ql-chip" target="_blank" title="${_esc(link.name)}">
+                    <a href="${/^https?:\/\//i.test(link.url) ? _esc(link.url) : '#'}" class="ql-chip" target="_blank" rel="noopener" title="${_esc(link.name)}">
                         <i class="${_esc(link.icon)}" style="color:${_esc(link.color || '#00ff88')};"></i>
                         ${_esc(link.name)}
                     </a>
@@ -111,62 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Toggle: Ambient sound
-    const toggleAmbient = document.getElementById('toggleAmbient');
-    if (toggleAmbient) {
-        const stored = localStorage.getItem('homepage_ambientEnabled');
-        toggleAmbient.checked = stored === '1';
-        toggleAmbient.addEventListener('change', () => {
-            localStorage.setItem('homepage_ambientEnabled', toggleAmbient.checked ? '1' : '0');
-            if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
-                chrome.storage.local.set({ homepage_ambientEnabled: toggleAmbient.checked ? '1' : '0' });
-            }
-        });
+    function openHomepage(hash = '') {
+        if (typeof chrome !== 'undefined' && chrome.tabs) {
+            chrome.tabs.create({ url: chrome.runtime.getURL('index.html') + hash });
+            window.close();
+        } else window.open('index.html' + hash, '_blank');
     }
-
-    // Button: Open New Tab
-    const openBtn = document.getElementById('openNewTab');
-    if (openBtn) {
-        openBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (typeof chrome !== 'undefined' && chrome?.tabs) {
-                chrome.tabs.create({ url: chrome.runtime.getURL('index.html') });
-            } else {
-                window.open('index.html', '_blank');
-            }
-        });
-    }
-
-    // Button: Export settings
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', () => {
-            const data = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('homepage_') && k !== 'homepage_ai_providers') data[k] = localStorage.getItem(k);
-            }
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = '3d-parallax-settings.json';
-            a.click();
-            URL.revokeObjectURL(a.href);
-        });
-    }
-
-    // Button: Reset
-    const resetBtn = document.getElementById('resetBtn');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
-                chrome.storage.local.clear(() => location.reload());
-            } else {
-                localStorage.clear();
-                location.reload();
-            }
-        });
-    }
+    document.getElementById('ambientBtn')?.addEventListener('click', () => openHomepage('#sound'));
+    document.getElementById('openNewTab')?.addEventListener('click', e => { e.preventDefault(); openHomepage(); });
+    document.getElementById('exportBtn')?.addEventListener('click', () => openHomepage('#backup'));
+    document.getElementById('resetBtn')?.addEventListener('click', () => openHomepage('#reset'));
 
     // Feedback link — opens new tab to index.html and triggers the feedback modal
     const popupFeedbackLink = document.getElementById('popupFeedbackLink');

@@ -1,32 +1,21 @@
-# 3D Parallax 2.2.0
+# 3D Parallax 2.3.0
 
-The new interface uses native system fonts, compact shortcuts, and a consistent dark surface for controls. Your saved wallpaper, theme, links, and layout remain available.
+Resizing a widget now scales its actual content. Fonts, shortcut icons and search controls follow the usable space inside the card, excluding the edit header and small padding. Long names, dates and clocks with seconds fit inside the available width. A Content size control lets you fine-tune each widget.
 
-## What changed
+The default search and shortcut widgets use eight columns. Edit headers are smaller, and Tidy up removes empty rows without changing your widget widths. Undo restores the previous arrangement. Elements uses clear on/off switches alongside each widget's settings button.
 
-- Quick links use smaller cards and an inline plus tile. The full-width add-link header is gone.
-- Settings has five sections: General, Background, Layout, AI features, and Backup & help. Advanced provider options are collapsed.
-- Customize has Elements, Effects, and Sizes tabs. Controls update the page immediately and save on this device.
-- Layout editing supports undo, keyboard movement, precise size and position controls, and automatic overlap handling. Hidden widgets can be restored from Elements.
-- Shortcuts update immediately in both layouts, support reordering, and accept addresses such as `example.com`. Only HTTP and HTTPS addresses are accepted.
-- The weather widget caches requests, times out unavailable requests, and offers a retry button.
-- Startup preferences use an external script compatible with the extension's CSP. Icons are bundled locally, and remote font requests have been removed.
-- Backups exclude API keys by default. Restoring included provider keys updates the extension's native storage too.
-- Feedback uses the backend API route and shows readable service errors.
-- The toolbar popup shows the correct theme count, saved shortcuts, and name. The privacy page now describes the optional network features and backups.
+Weather is off until enabled and uses a city you choose, without device location permission. It can be disabled in General. Ambient sound has working controls, and the popup opens the sound, backup and reset screens. Reset asks for confirmation and removes preferences, wallpaper files and restore copies, notes, tasks, AI keys and the selected weather city. Other open homepage tabs reload after a reset.
 
-## Try the update
+Fresh installs start with Minimal Dark and a Welcome heading. Saved themes and layouts are preserved. Static headlines render correctly in widget view, optional effects hide their related decorations, and feedback stays available without an automatic startup prompt.
 
-1. Open `chrome://extensions` and enable Developer mode.
-2. Click **Load unpacked** and select this `custom extension` folder, or click **Reload** if it is already loaded.
-3. Open a new tab. Use Settings for preferences, Customize for element visibility/effects/sizes, and the grid button to arrange widgets.
+## Install and check
 
-## Validation
+Reload this folder at chrome://extensions, then open a new tab. In widget mode, drag a corner to resize; the content should grow immediately. Use the settings icon for content scale and exact dimensions. Tidy up and Undo help adjust older layouts with empty rows.
 
-Automated browser checks covered settings navigation, form validation, live effects and sizes, adding/removing/reordering shortcuts, more than twelve shortcuts, undo, overlap handling, widget visibility, persistence after reload, and narrow screens. Backup checks cover excluding keys by default, explicit key inclusion, and rejecting malformed imports.
+`npm test` checks UI navigation, persistence, forms, backups, link synchronization, real pointer resizing for eight visual widgets, long clock formats, content scale, tidy/undo, city selection/disable, reset cancellation and data deletion. A separate check loads the actual Manifest V3 extension to verify native storage, popup behavior, local assets and CSP. Backend tests use a mock email sender. No paid AI requests or feedback emails are sent by these tests.
 
-The extension was also loaded directly in Chromium with Manifest V3: the new-tab override, native provider storage, restored startup preferences, popup, local asset loading, and CSP passed. Weather responses were mocked for repeatable interaction tests. Paid/live AI requests and feedback submissions were not sent.
+## Store package
 
-The locally prepared ZIP contains the runtime files and licenses, with the manifest at its root. Development fixtures and browser profiles are excluded. The package has not been submitted to or approved by the Chrome Web Store. Store listing details and public hosting for the privacy policy are handled in the publisher's dashboard.
+`python scripts/package-extension.py` creates a checked upload ZIP in dist. The [store kit](../store-kit/README.md) contains listing copy, privacy disclosures, store screenshots and promotional images. The privacy policy is available in the extension and as [public source](../PRIVACY.md). The backend also serves the same policy at /privacy.
 
-Browser checks can be rerun from the repository root with `npm install`, `npx playwright install chromium`, and `npm test`. Set `BROWSER_PATH` to use an existing Chromium executable. Tests store screenshots and isolated browser profiles in `.test-artifacts/`. Feedback tests use mocked responses and never send an email.
+Store submission and Google's review are completed through the publisher's Chrome Web Store account.

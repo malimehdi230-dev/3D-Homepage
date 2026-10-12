@@ -2,11 +2,11 @@
   "manifest_version": 3,
   "name": "3D Parallax",
   "short_name": "3D Parallax",
-  "version": "2.2.0",
-  "description": "Immersive 3D new tab with 18 themes, AI chat, custom wallpapers, live weather & deep personalisation. No sign-up needed.",
+  "version": "2.3.0",
+  "description": "Make each new tab yours with resizable widgets, quick links, 18 themes, custom wallpapers, optional weather and AI tools.",
   "author": "Muhammad Ali Mehdi",
   "homepage_url": "https://3dparallax.app",
-  "minimum_chrome_version": "109",
+  "minimum_chrome_version": "111",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },

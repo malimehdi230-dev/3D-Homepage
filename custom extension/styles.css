@@ -3688,67 +3688,7 @@ body.drag-over .wp-thumb-empty {
 .widget-body.wb-search { padding: 6px 16px; }
 
 
-/* ── Widget content scales with card height (container queries) ──────────── */
-
-@container wcard (height < 80px)  { .wb-clock { font-size: 1.4rem; } }
-@container wcard (height >= 80px)  { .wb-clock { font-size: 2rem; } }
-@container wcard (height >= 130px) { .wb-clock { font-size: 3rem; } }
-@container wcard (height >= 180px) { .wb-clock { font-size: 4.5rem; } }
-@container wcard (height >= 250px) { .wb-clock { font-size: 6rem; } }
-@container wcard (height >= 350px) { .wb-clock { font-size: 8rem; } }
-
-@container wcard (height < 60px)  { .wb-date { font-size: 0.85rem; } }
-@container wcard (height >= 60px)  { .wb-date { font-size: 1.1rem; } }
-@container wcard (height >= 100px) { .wb-date { font-size: 1.6rem; } }
-@container wcard (height >= 160px) { .wb-date { font-size: 2.2rem; } }
-
-@container wcard (height < 50px)   { .wb-greeting { font-size: 1rem; } }
-@container wcard (height >= 50px)   { .wb-greeting { font-size: 1.4rem; } }
-@container wcard (height >= 90px)   { .wb-greeting { font-size: 2rem; } }
-@container wcard (height >= 150px)  { .wb-greeting { font-size: 2.8rem; } }
-
-@container wcard (height < 80px)   { .wb-weather-inner { font-size: 1rem; } }
-@container wcard (height >= 80px)   { .wb-weather-inner { font-size: 1.4rem; } }
-@container wcard (height >= 140px)  { .wb-weather-inner { font-size: 2rem; } }
-@container wcard (height >= 220px)  { .wb-weather-inner { font-size: 3rem; } }
-
-@container wcard (height < 50px)   { .wb-headline .subtitle { font-size: 0.85rem; } }
-@container wcard (height >= 50px)   { .wb-headline .subtitle { font-size: 1rem; } }
-@container wcard (height >= 90px)   { .wb-headline .subtitle { font-size: 1.5rem; } }
-@container wcard (height >= 140px)  { .wb-headline .subtitle { font-size: 2rem; } }
-
-@container wcard (height < 60px)   { .wb-search-wrap { gap: 6px; } .wb-search-input { font-size: 0.8rem; padding: 6px 12px; } }
-@container wcard (height >= 60px)   { .wb-search-wrap { gap: 10px; } .wb-search-input { font-size: 0.95rem; padding: 10px 16px; } }
-@container wcard (height >= 120px)  { .wb-search-input { font-size: 1.2rem; padding: 14px 20px; } }
-@container wcard (height >= 200px)  { .wb-search-input { font-size: 1.6rem; padding: 18px 24px; } }
-
-@container wcard (height < 90px) {
-  .wb-links .link-card { padding: 6px 8px; min-width: 52px; max-width: 64px; }
-  .wb-links .link-icon-wrapper { width: 32px; height: 32px; margin-bottom: 4px; border-radius: 8px; }
-  .wb-links .link-icon-wrapper i { font-size: 1.1rem; }
-  .wb-links .link-name { font-size: 0.6rem; }
-}
-@container wcard (height >= 90px) {
-  .wb-links .link-card { padding: 10px 10px; min-width: 68px; max-width: 84px; }
-  .wb-links .link-icon-wrapper { width: 44px; height: 44px; margin-bottom: 6px; border-radius: 11px; }
-  .wb-links .link-icon-wrapper i { font-size: 1.6rem; }
-  .wb-links .link-name { font-size: 0.68rem; }
-}
-@container wcard (height >= 160px) {
-  .wb-links .link-card { padding: 14px 12px; min-width: 84px; max-width: 100px; }
-  .wb-links .link-icon-wrapper { width: 58px; height: 58px; margin-bottom: 8px; border-radius: 14px; }
-  .wb-links .link-icon-wrapper i { font-size: 2.1rem; }
-  .wb-links .link-name { font-size: 0.76rem; }
-}
-@container wcard (height >= 250px) {
-  .wb-links .link-card { padding: 18px 14px; min-width: 100px; max-width: 120px; }
-  .wb-links .link-icon-wrapper { width: 72px; height: 72px; margin-bottom: 10px; border-radius: 18px; }
-  .wb-links .link-icon-wrapper i { font-size: 2.6rem; }
-  .wb-links .link-name { font-size: 0.85rem; }
-}
-@container wcard (width >= 600px) { .wb-clock { letter-spacing: 0.05em; } }
-
-/* widget content styles — base values (container queries above take priority inside .widget-card) */
+/* Widget fitting is measured in widgets.js and styled in ui.css. */
 .wb-clock { font-family: var(--font-display); font-weight: 700;
     font-size: clamp(1.6rem, 5vw, 3rem); color: var(--primary);
     text-shadow: 0 0 24px color-mix(in srgb, var(--primary) 50%, transparent); letter-spacing: 2px; }

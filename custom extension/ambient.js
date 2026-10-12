@@ -184,7 +184,11 @@ const Ambient = (() => {
     try { saved = localStorage.getItem(LS_KIND); } catch {}
     if (saved === 'rain' || saved === 'lofi') {
       // Defer until a gesture so we don't fight autoplay policy on load.
-      const kick = () => { start(saved); };
+      const kick = () => {
+        document.removeEventListener('pointerdown', kick);
+        document.removeEventListener('keydown', kick);
+        if (!_kind && localStorage.getItem(LS_KIND) === saved) start(saved);
+      };
       document.addEventListener('pointerdown', kick, { once: true });
       document.addEventListener('keydown', kick, { once: true });
     }

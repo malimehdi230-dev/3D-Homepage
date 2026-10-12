@@ -1,7 +1,7 @@
 // feedback.js — 3D Parallax Feedback Module
 // Sends user feedback to the Vercel backend via fetch()
 
-// ─── REPLACE THIS URL with your deployed Vercel project URL ───────────────────
+// The deployed feedback API; requests are sent only when the user submits.
 const FEEDBACK_API = 'https://3-d-parallax-backend.vercel.app/api/feedback';
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -45,8 +45,7 @@ class FeedbackModule {
       if (e.key === 'Escape' && this.isOpen) this.close();
     });
 
-    // Daily nudge — show once per day until dismissed forever or feedback sent
-    setTimeout(() => this._checkDailyNudge(), 3000);
+    // Feedback stays available from the toolbar and Settings; no startup prompt.
   }
 
   // ── Daily nudge ─────────────────────────────────────────────────────────────
@@ -179,6 +178,7 @@ class FeedbackModule {
           </div>
         </div>
 
+        <p class="feedback-privacy-note">Submitting sends your message, optional rating, theme and extension version to the developer. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="https://github.com/malimehdi230-dev/3D-Homepage/issues/new" target="_blank" rel="noopener">Get support on GitHub</a></p>
         <div id="feedbackFooter">
           <span id="feedbackStatus"></span>
           <button id="feedbackSubmit">
@@ -261,7 +261,7 @@ class FeedbackModule {
       ?? localStorage.getItem('homepage_template')
       ?? 'unknown';
     const version = (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version)
-      ?? '2.2.0';
+      ?? '2.3.0';
 
     try {
       const res = await fetch(FEEDBACK_API, {
@@ -323,6 +323,7 @@ class FeedbackModule {
   }
 
   open() {
+    this._opener = document.activeElement;
     this.modal.classList.add('open');
     this.isOpen = true;
     setTimeout(() => document.getElementById('feedbackMessage')?.focus(), 300);
@@ -331,6 +332,7 @@ class FeedbackModule {
   close() {
     this.modal.classList.remove('open');
     this.isOpen = false;
+    this._opener?.focus();
   }
 
   toggle() {

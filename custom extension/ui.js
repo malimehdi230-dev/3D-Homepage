@@ -72,11 +72,31 @@ const HomepageUI = (() => {
     const note = document.createElement('span');
     note.className = 'settings-save-note'; note.textContent = 'Other preferences save as you change them.';
     form.appendChild(note);
+    const general = shell.querySelector('#settings-pane-general');
+    general.insertAdjacentHTML('beforeend', `<div class="settings-section"><h4 class="settings-section-title">Weather</h4><label class="customize-panel-row"><span>Show weather<small id="weatherCityHint">Choose a city. No device location access.</small></span><span class="ctrl-toggle"><input type="checkbox" id="weatherEnabled" aria-label="Show weather" ${WeatherAccess.enabled() ? 'checked' : ''}><span class="ctrl-toggle-track"></span></span></label><button type="button" class="btn btn-secondary" id="weatherCityChange">Choose or change city</button></div>`);
+    general.querySelector('#weatherEnabled').onchange = async e => {
+      if (e.target.checked) e.target.checked = await WeatherAccess.enable();
+      else WeatherAccess.disable();
+    };
+    const syncWeather = () => {
+      general.querySelector('#weatherEnabled').checked = WeatherAccess.enabled();
+      general.querySelector('#weatherCityHint').textContent = WeatherAccess.city() ? 'Forecast for ' + WeatherAccess.city().name + '. No device location access.' : 'Choose a city. No device location access.';
+    };
+    general.querySelector('#weatherCityChange').onclick = () => WeatherAccess.chooseCity();
+    document.addEventListener('weather-changed', syncWeather); syncWeather();
     const background = shell.querySelector('#settings-pane-appearance');
     const themes = document.createElement('button');
     themes.className = 'btn btn-secondary'; themes.type = 'button'; themes.innerHTML = '<i class="fas fa-palette"></i> Browse themes';
     themes.addEventListener('click', () => { window.app.closeAllModals(); window.app.openTemplateModal(); });
     background.querySelector('.settings-pane-heading').appendChild(themes);
+    background.insertAdjacentHTML('beforeend', `<div class="settings-section" id="soundOptions"><h4 class="settings-section-title">Ambient sound</h4><p class="settings-section-desc">A quiet backdrop while you work. Sound plays after you choose it.</p><div class="sound-options">${[['','Off'],['rain','Rain'],['lofi','Lo-fi']].map(([kind,label]) => `<button type="button" class="btn btn-secondary" data-sound="${kind}">${label}</button>`).join('')}</div><label class="customize-panel-row"><span>Volume</span><input type="range" id="ambientVolume" min="0" max="100" value="${Ambient.getVolume()*100}" aria-label="Ambient volume"></label></div>`);
+    const syncSound = () => background.querySelectorAll('[data-sound]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sound === (Ambient.current() || ''))));
+    background.querySelectorAll('[data-sound]').forEach(b => b.onclick = () => b.dataset.sound ? Ambient.start(b.dataset.sound) : Ambient.stop());
+    background.querySelector('#ambientVolume').oninput = e => Ambient.setVolume(e.target.value / 100);
+    document.addEventListener('ambient-changed', syncSound); syncSound();
+    const data = shell.querySelector('#settings-pane-data');
+    data.insertAdjacentHTML('beforeend', `<div class="settings-section"><h4 class="settings-section-title">Privacy & support</h4><p class="settings-section-desc">Your preferences stay on this device. Optional services are explained in our privacy policy.</p><div class="layout-action-row"><a class="btn btn-secondary" href="privacy.html" target="_blank" rel="noopener">Privacy policy</a><a class="btn btn-secondary" href="https://github.com/malimehdi230-dev/3D-Homepage/issues" target="_blank" rel="noopener">Support</a></div></div><div class="settings-section"><h4 class="settings-section-title">Start fresh</h4><p class="settings-section-desc">Remove saved settings, shortcuts, tasks, notes, wallpapers and AI keys from this device.</p><button type="button" class="btn btn-secondary" id="openResetBtn">Reset extension…</button></div>`);
+    data.querySelector('#openResetBtn').onclick = openReset;
     const layout = shell.querySelector('#settings-pane-layout');
     layout.insertAdjacentHTML('beforeend', `<div class="layout-choice-grid">
       <button class="layout-choice" type="button" id="settingsClassicChoice"><i class="fas fa-align-center"></i><strong>Centered</strong><span>A simple, balanced start page.</span></button>
@@ -111,23 +131,26 @@ const HomepageUI = (() => {
 
   function applyEffects() {
     effects.forEach(([id,,,key]) => {
-      if (id !== 'typewriter') document.body.classList.toggle('fx-' + id + '-off', localStorage.getItem(key) === '0');
+      document.body.classList.toggle('fx-' + id + '-off', localStorage.getItem(key) === '0');
     });
     classicWidgets.forEach(([id]) => document.body.classList.toggle('classic-' + id + '-off', localStorage.getItem('homepage_visible_' + id) === '0'));
   }
 
   function drawWidgetManager(container) {
     if (!container) return;
+    const focused = container.contains(document.activeElement) ? document.activeElement : null;
+    const focusKey = focused?.dataset.visible || focused?.dataset.config;
     const items = window.WidgetCanvas?.listItems() || [];
     const custom = !!window.WidgetCanvas?.getLayout();
     container.innerHTML = custom
-      ? `<p class="widget-manager-empty">Show the things you use. Hide the rest.</p>${items.map(i => `<div class="widget-manager-row"><i class="fas ${esc(i.icon)}" aria-hidden="true"></i><span>${esc(i.label)}</span><button type="button" data-config="${esc(i.id)}" title="${esc(i.label)} settings" aria-label="${esc(i.label)} settings"><i class="fas fa-sliders"></i></button><button type="button" data-visible="${esc(i.id)}" aria-pressed="${!i.hidden}" title="${i.hidden ? 'Show' : 'Hide'} ${esc(i.label)}" aria-label="${i.hidden ? 'Show' : 'Hide'} ${esc(i.label)}"><i class="fas fa-eye${i.hidden ? '-slash' : ''}"></i></button></div>`).join('')}`
+      ? `<p class="widget-manager-empty">Show the things you use. Hide the rest.</p>${items.map(i => `<div class="widget-manager-row"><i class="fas ${esc(i.icon)}" aria-hidden="true"></i><span>${esc(i.label)}</span><button type="button" data-config="${esc(i.id)}" title="${esc(i.label)} settings" aria-label="${esc(i.label)} settings"><i class="fas fa-sliders"></i></button><label class="ctrl-toggle"><input type="checkbox" data-visible="${esc(i.id)}" aria-label="Show ${esc(i.label)}" ${!i.hidden ? 'checked' : ''}><span class="ctrl-toggle-track"></span></label></div>`).join('')}`
       : `<p class="widget-manager-empty">Choose what appears on your centered homepage.</p>${classicWidgets.map(([id,label]) => `<label class="customize-panel-row"><span>${label}</span><span class="ctrl-toggle"><input type="checkbox" data-classic="${id}" aria-label="Show ${label}" ${localStorage.getItem('homepage_visible_' + id) !== '0' ? 'checked' : ''}><span class="ctrl-toggle-track"></span></span></label>`).join('')}`;
     container.insertAdjacentHTML('beforeend', `<button type="button" class="btn btn-secondary" data-arrange style="margin-top:20px;width:100%"><i class="fas fa-table-cells"></i> ${custom ? 'Arrange widgets' : 'Try a widget layout'}</button>`);
-    container.querySelectorAll('[data-visible]').forEach(b => b.onclick = () => WidgetCanvas.toggleVisibility(b.dataset.visible));
+    container.querySelectorAll('[data-visible]').forEach(b => b.onchange = () => WidgetCanvas.toggleVisibility(b.dataset.visible));
     container.querySelectorAll('[data-config]').forEach(b => b.onclick = () => WidgetCanvas.openSettings(b.dataset.config));
     container.querySelectorAll('[data-classic]').forEach(cb => cb.onchange = () => { localStorage.setItem('homepage_visible_' + cb.dataset.classic, cb.checked ? '1' : '0'); applyEffects(); });
     container.querySelector('[data-arrange]').onclick = () => { document.getElementById('customizationPanel')?.classList.remove('open'); WidgetCanvas.enterEdit(); };
+    if (focusKey) container.querySelector(`[data-${focused.dataset.visible ? 'visible' : 'config'}="${focusKey}"]`)?.focus();
   }
 
   function buildCustomizePanel(app) {
@@ -165,6 +188,7 @@ const HomepageUI = (() => {
       const value = slider.value; localStorage.setItem('homepage_custom_' + slider.dataset.size, value);
       document.documentElement.style.setProperty(slider.dataset.css, value + (slider.dataset.unit === '%' ? '' : slider.dataset.unit));
       slider.nextElementSibling.textContent = value + slider.dataset.unit;
+      document.dispatchEvent(new Event('sizes-changed'));
     });
     panel.querySelector('#cpResetBtn').onclick = () => {
       sizes.forEach(([,key,,,,unit,css,def]) => {
@@ -172,6 +196,7 @@ const HomepageUI = (() => {
         const input = panel.querySelector('#cp-' + key); input.value = def; input.nextElementSibling.textContent = def + unit;
       });
       window.toast?.('Sizes reset.', 'success', 1800);
+      document.dispatchEvent(new Event('sizes-changed'));
     };
     drawWidgetManager(panel.querySelector('.widget-manager-list'));
     return panel;
@@ -179,6 +204,34 @@ const HomepageUI = (() => {
 
   function focusables(container) {
     return [...container.querySelectorAll('a[href], button, input, select, textarea, [tabindex="0"]')].filter(e => !e.disabled && e.getClientRects().length && !e.closest('[hidden]'));
+  }
+  function openReset() {
+    document.getElementById('resetModal').classList.add('active');
+  }
+  function initReset() {
+    const overlay = document.createElement('div');
+    overlay.id = 'resetModal'; overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal" style="max-width:440px"><div class="modal-header"><h2 class="modal-title">Reset your homepage?</h2><button type="button" class="modal-close" data-modal="resetModal" aria-label="Cancel reset">×</button></div><p class="settings-section-desc">This removes your settings, shortcuts, notes, tasks, wallpapers and saved AI keys from this device. Export a backup first if you want to keep them.</p><div class="reset-actions"><button type="button" class="btn btn-secondary" id="cancelResetBtn">Keep my setup</button><button type="button" class="btn btn-danger" id="confirmResetBtn">Reset everything</button></div><p id="resetStatus" role="status"></p></div>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.classList.remove('active');
+    overlay.querySelector('.modal-close').onclick = close;
+    overlay.querySelector('#cancelResetBtn').onclick = close;
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    overlay.querySelector('#confirmResetBtn').onclick = async e => {
+      e.target.disabled = true;
+      try {
+        Ambient.stop(); await Wallpaper.clearAll();
+        if (typeof chrome !== 'undefined' && chrome.storage?.local) await chrome.storage.local.clear();
+        localStorage.clear();
+        // Inform other open homepage tabs before reloading this one.
+        localStorage.setItem('homepage_reset_at', String(Date.now()));
+        location.replace(location.pathname);
+      } catch (error) {
+        console.warn('[3D Parallax] Reset failed:', error.message);
+        e.target.disabled = false;
+        overlay.querySelector('#resetStatus').textContent = 'Could not finish resetting. Please try again.';
+      }
+    };
   }
   function setupDialogs() {
     document.querySelectorAll('.modal-overlay').forEach((overlay,index) => {
@@ -191,7 +244,7 @@ const HomepageUI = (() => {
         const found = modalStack.find(x => x.overlay === overlay);
         if (active && !found) {
           modalStack.push({overlay, opener: document.activeElement});
-          const target = overlay.id === 'linkModal' ? document.getElementById('linkName') : overlay.id === 'settingsModal' ? overlay.querySelector('.settings-tab[aria-selected=true]') : focusables(dialog)[0];
+          const target = overlay.id === 'linkModal' ? document.getElementById('linkName') : overlay.id === 'weatherCityModal' ? document.getElementById('weatherCityInput') : overlay.id === 'settingsModal' ? overlay.querySelector('.settings-tab[aria-selected=true]') : focusables(dialog)[0];
           (target || dialog).focus();
         } else if (!active && found) {
           modalStack = modalStack.filter(x => x !== found);
@@ -204,7 +257,7 @@ const HomepageUI = (() => {
     document.addEventListener('keydown',e => {
       if (e.key !== 'Tab') return;
       const widgetDialog = document.getElementById('widgetSettingsPop');
-      const top = widgetDialog || modalStack.at(-1)?.overlay;
+      const top = widgetDialog || document.querySelector('#feedbackOverlay.open') || modalStack.at(-1)?.overlay;
       if (!top) return;
       const elements = focusables(top); if (!elements.length) return;
       const first = elements[0], last = elements.at(-1);
@@ -214,7 +267,7 @@ const HomepageUI = (() => {
   }
 
   function init() {
-    initSettings(); applyEffects(); setupDialogs();
+    initReset(); initSettings(); applyEffects(); setupDialogs();
     document.querySelectorAll('label.form-label').forEach(label => {
       const control = label.parentElement.querySelector('input,select,textarea'); if (control?.id) label.htmlFor = control.id;
     });
@@ -224,13 +277,21 @@ const HomepageUI = (() => {
       refreshLayoutChoice(); drawWidgetManager(document.querySelector('#customizationPanel .widget-manager-list'));
     });
     window.addEventListener('storage', event => {
+      if (event.key === 'homepage_reset_at') { location.reload(); return; }
       if (!event.key || event.key.startsWith('homepage_')) applyEffects();
       if (event.key === 'homepage_links') { window.app.links = window.app.loadLinks(); window.app.renderLinks(); }
       if (event.key === 'homepage_userName' && event.newValue) window.app.updateUserName(event.newValue);
     });
     new MutationObserver(applyEffects).observe(document.body,{attributes:true,attributeFilter:['class']});
+    if (location.hash === '#backup' || location.hash === '#reset' || location.hash === '#sound') {
+      const hash = location.hash;
+      openSettings(hash === '#sound' ? 'appearance' : 'data');
+      if (hash === '#reset') openReset();
+      if (hash === '#sound') document.getElementById('soundOptions').scrollIntoView({ block: 'nearest' });
+      history.replaceState(null, '', location.pathname);
+    }
   }
-  return { init, openSettings, buildCustomizePanel, applyEffects };
+  return { init, openSettings, openReset, buildCustomizePanel, applyEffects };
 })();
 window.HomepageUI = HomepageUI;
 document.addEventListener('DOMContentLoaded', HomepageUI.init);

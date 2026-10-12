@@ -1,69 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>3D Parallax — Privacy Policy</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0a0a0f;
-      color: rgba(255,255,255,0.85);
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
-      line-height: 1.75;
-    }
-    h1 { color: #00ff88; font-size: 2rem; margin-bottom: 4px; }
-    h2 { color: #00d4ff; font-size: 1.1rem; margin-top: 36px; margin-bottom: 8px; }
-    p, li { color: rgba(255,255,255,0.72); font-size: 0.95rem; }
-    ul { padding-left: 20px; }
-    a { color: #00ff88; }
-    .updated { font-size: 0.8rem; color: rgba(255,255,255,0.35); margin-top: 4px; }
-    hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 40px 0; }
-  </style>
-</head>
-<body>
-  <h1>Privacy Policy</h1>
-  <p class="updated">Last updated: 2026-10-12 &nbsp;·&nbsp; Extension version: 2.2.0</p>
-
-  <hr>
-
-  <h2>1. Your local preferences</h2>
-  <p><strong>3D Parallax New Tab</strong> stores your name, themes, shortcuts, headline, layout, notes, tasks, search history, and AI provider keys on your device, using <code>chrome.storage.local</code> and <code>localStorage</code>. Uploaded wallpaper files are stored locally in IndexedDB.</p>
-  <p>The extension does not upload your saved preferences automatically. Optional weather, AI, web-search, wallpaper-search, and feedback features make the network requests described below. Exporting a backup creates a file on your device; saved API keys are excluded unless you choose to include them in the homepage settings.</p>
-
-  <h2>2. Permissions we use — and why</h2>
-  <ul>
-    <li><strong>storage / unlimitedStorage</strong> — saves your settings and wallpaper blob locally.</li>
-    <li><strong>Geolocation</strong> (optional, browser-level prompt) — fetches weather from the public Open-Meteo API using your coordinates. Your coordinates are sent directly from your browser to Open-Meteo; we do not see or store them.</li>
-  </ul>
-
-  <h2>3. Third-party network requests</h2>
-  <p>The extension may make the following outbound requests on your behalf:</p>
-  <ul>
-    <li><strong>Open-Meteo</strong> (<code>api.open-meteo.com</code>) — free, open-source weather API. No account or API key required. See their <a href="https://open-meteo.com/en/terms" target="_blank" rel="noopener">terms</a>.</li>
-    <li><strong>Groq or your chosen compatible provider</strong> — receives your API key and requests when you use AI chat, AI headlines, AI Makeover, or provider tests. Chat requests include recent messages; styling requests include your style prompt.</li>
-    <li><strong>DuckDuckGo and Wikipedia</strong> — receive your search query when AI web search is enabled. Results may be included in the request to your AI provider.</li>
-    <li><strong>Wallhaven and wallpaper image hosts</strong> — receive wallpaper search terms and image requests when an AI styling or imported setup requests a remote wallpaper.</li>
-    <li><strong>Your selected search engine or shortcut website</strong> — receives the normal browser navigation when you search or open a shortcut.</li>
-    <li><strong>The developer's feedback service</strong> (<code>3-d-parallax-backend.vercel.app</code>) — receives the message, feedback category, optional rating, selected theme, extension version, and timestamp when you submit the feedback form. Network services may also receive normal connection information such as your IP address.</li>
-  </ul>
-  <p>No tracking pixels, analytics SDKs, or advertising networks are included.</p>
-
-  <h2>4. AI provider keys</h2>
-  <p>If you add an API key, it is stored on this device and sent to the provider endpoint you configure when using or testing AI features. You can remove keys in Settings → AI features. Backup files that you explicitly choose to export with API keys contain those keys; keep such files private.</p>
-
-  <h2>5. Children's privacy</h2>
-  <p>This extension is not directed at children under 13. We do not knowingly collect information from children.</p>
-
-  <h2>6. Changes to this policy</h2>
-  <p>If we make material changes we will update the "Last updated" date above and bump the extension version. Continued use after an update constitutes acceptance of the revised policy.</p>
-
-  <h2>7. Contact</h2>
-  <p>For questions or concerns, open Settings → Backup &amp; help → Send Feedback in the extension. The publisher's contact information is also available on the Chrome Web Store listing once published.</p>
-
-  <hr>
-  <p style="font-size:0.8rem;color:rgba(255,255,255,0.25);text-align:center;">3D Parallax New Tab &nbsp;·&nbsp; v2.2.0 &nbsp;·&nbsp; Developed by Muhammad Ali Mehdi</p>
-</body>
-</html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Parallax — Privacy policy</title><style>
+html { color-scheme:dark; } body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#17191e; color:#d6dae2; max-width:780px; margin:auto; padding:48px 24px 80px; line-height:1.7; }
+h1 { color:#ecf2ed; font-size:30px; letter-spacing:-.6px; line-height:1.2; } h2 { color:#c6dfcf; font-size:19px; margin-top:32px; }
+p,li { font-size:15px; } li { margin-bottom:12px; } a { color:#c6dfcf; } a:focus-visible { outline:2px solid #c6dfcf; outline-offset:4px; }
+</style></head><body><main><h1>3D Parallax privacy policy</h1>
+<p>Last updated: October 13, 2026. Extension version: 2.3.0. Publisher: Muhammad Ali Mehdi.</p>
+<h2>What the extension does</h2>
+<p>3D Parallax replaces your new tab page with a personal homepage. Settings, shortcuts, widgets, wallpapers and optional weather and AI features serve that purpose. It has no advertising, tracking pixels or analytics SDKs and does not read your other tabs or Chrome browsing history.</p>
+<h2>Data kept on your device</h2>
+<p>Your display name, theme, shortcuts, layout, headlines, tasks, notes, sound preferences, your selected weather city and its coordinates, searches made in the centered homepage search box, and configured AI provider keys are saved locally. Settings use localStorage and chrome.storage.local; uploaded wallpaper files and a setup restore copy use IndexedDB. These are not automatically uploaded to the developer. AI chat messages are held in the current page session and sent to your chosen provider when you use chat.</p>
+<p>The storage permission saves preferences and provider keys. unlimitedStorage allows large image and video wallpapers to remain on your device. The extension does not request access to your browser history, other tabs, or the content of pages you browse.</p>
+<h2>Optional network features</h2>
+<ul><li>Weather is off until you choose a city and enable it. City search sends the city name you enter to Open-Meteo’s geocoding service. Selecting a result saves that city and its coordinates on this device; the city coordinates go directly to Open-Meteo for a forecast. The extension does not access your device location. Weather results are cached for up to 30 minutes. Disable weather in Settings → General to stop forecast requests.</li><li>AI features use a provider you configure. Chat, headline generation, AI styling, provider tests and model discovery send your API key and the relevant request to that provider. Chat includes recent messages; styling includes your prompt. Provider usage charges and privacy terms apply. Ordinary homepage features do not require an API key.</li><li>If you enable AI web search, DuckDuckGo and Wikipedia receive the search query, and returned information can be included in the request to your AI provider.</li><li>Wallpaper searches requested through AI styling use Wallhaven. Wallpaper queries and requests for remote images are sent to Wallhaven and the selected image host. Importing a setup with a remote wallpaper also contacts that image host.</li><li>Searching or opening a shortcut navigates to the selected search engine or website in the normal way.</li><li>Submitting feedback sends your message, category, optional rating, selected theme, extension version and timestamp to the developer&#x27;s feedback service at 3-d-parallax-backend.vercel.app. Vercel hosts the service and Resend delivers feedback to the developer&#x27;s email inbox. The backend has no feedback database. The developer reads submitted feedback to provide support and improve the extension.</li><li>Network services receive ordinary connection information, such as your IP address, and may keep operational logs under their own policies. Configured provider keys are sent only to the provider endpoint you choose, not to the developer&#x27;s feedback server.</li></ul>
+<h2>Your choices, backups and deletion</h2>
+<p>You can edit or remove saved shortcuts, tasks, notes and provider keys in the extension. Settings → Backup &amp; help → Reset extension removes saved preferences, search history, tasks, notes, wallpapers including the setup restore copy, and AI keys from this device. Your selected weather city is also removed. Uninstalling removes the extension&#x27;s local storage. Copies you exported or sent to another service are not deleted by a local reset or uninstall.</p>
+<p>Backup files are saved to your device. API keys are excluded by default and included only if you explicitly choose that option. Wallpaper files can also be included when selected. A backup containing keys contains sensitive authentication data; keep it private.</p>
+<p>Local data remains until you delete it, reset, or uninstall. Feedback messages remain in the developer&#x27;s support inbox as needed to handle the request; you can request deletion through the feedback form. Third-party AI, weather, search and image services control retention of data you send to them under their own terms. A local reset cannot delete those services&#x27; records.</p>
+<h2>Limited use</h2>
+<p>3D Parallax uses data only to provide or improve the personal homepage and the optional features described here. It does not sell user data, use it for advertising, or transfer it for creditworthiness or lending decisions. Data is shared only as necessary for the features you choose, with your consent, or when legally required. Human review is limited to feedback you explicitly submit or other access you explicitly authorize. Its use of user data follows the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+<h2>Contact and changes</h2>
+<p>For support or privacy requests, use Settings → Backup &amp; help → Send Feedback. You can also open an issue at <a href="https://github.com/malimehdi230-dev/3D-Homepage/issues" target="_blank" rel="noopener">the public project support page</a>; do not post private information or API keys in a public issue. The publisher&#x27;s support contact is available in the Chrome Web Store listing when published.</p>
+<p>The extension is not directed at children under 13. Material changes to data handling will be described in this policy and the release notes. The updated date above identifies the current policy.</p></main></body></html>

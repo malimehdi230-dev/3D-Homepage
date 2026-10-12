@@ -520,7 +520,7 @@ const WMO_ICONS = {
 
 class HomepageApp {
     constructor() {
-        this.currentTemplate = this.loadSetting('template') || 'programmer';
+        this.currentTemplate = this.loadSetting('template') || 'minimal';
         this.userName = this.loadSetting('userName') || 'YOUR NAME';
         this.apiKey = this.loadSetting('apiKey') || '';
         this.aiModel = this.loadSetting('aiModel') || 'openai/gpt-oss-120b';
@@ -815,6 +815,7 @@ class HomepageApp {
         if (!template) return;
 
         this.currentTemplate = templateId;
+        document.body.dataset.template = templateId;
         this.saveSetting('template', templateId);
 
         const root = document.documentElement;
@@ -829,8 +830,9 @@ class HomepageApp {
         // Update name
         const nameEl = document.getElementById('userName');
         if (nameEl) {
-            nameEl.textContent = this.userName;
-            nameEl.setAttribute('data-text', this.userName);
+            const displayName = this.userName === 'YOUR NAME' ? 'Welcome' : this.userName;
+            nameEl.textContent = displayName;
+            nameEl.setAttribute('data-text', displayName);
         }
 
         // Update roles for typing effect — prefer saved custom lines over template defaults
@@ -1115,7 +1117,7 @@ class HomepageApp {
         const modal = document.getElementById('settingsModal');
         if (modal) {
             modal.classList.add('active');
-            document.getElementById('settingsName').value = this.userName;
+            document.getElementById('settingsName').value = this.userName === 'YOUR NAME' ? '' : this.userName;
 
             // Render dynamic sections every time the modal opens
             this.renderAIProviders();
@@ -1299,6 +1301,7 @@ class HomepageApp {
     }
     saveHeadlineLines(lines) {
         try { localStorage.setItem('homepage_headline_lines', JSON.stringify(lines)); } catch {}
+        document.dispatchEvent(new Event('sizes-changed'));
     }
 
     // Typing Effect
@@ -1379,6 +1382,7 @@ class HomepageApp {
             twChk.addEventListener('change', () => {
                 this.typingEnabled = twChk.checked;
                 localStorage.setItem('homepage_headline_typewriter', twChk.checked ? '1' : '0');
+                document.body.classList.toggle('fx-typewriter-off', !twChk.checked);
                 if (twChk.checked) {
                     this.charIndex = 0; this.isDeleting = false;
                     this.typeEffect();
@@ -2053,7 +2057,8 @@ class HomepageApp {
             const active = document.activeElement;
             const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable);
 
-            if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && !isTyping) {
+            const dialogOpen = document.querySelector('.modal-overlay.active, #widgetSettingsPop, #feedbackOverlay.open');
+            if ((e.key === '/' || (e.key === 'k' && (e.ctrlKey || e.metaKey))) && !isTyping && !dialogOpen) {
                 e.preventDefault();
                 const search = document.querySelector('#widgetCanvas .wb-search-input') || document.getElementById('searchInput');
                 search?.focus();
@@ -2063,7 +2068,7 @@ class HomepageApp {
                 this.closeAllModals();
                 return;
             }
-            if (isTyping || document.querySelector('.modal-overlay.active, #widgetSettingsPop') || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (isTyping || dialogOpen || e.ctrlKey || e.metaKey || e.altKey) return;
 
             if (e.key === 'T' || e.key === 't') { this.openTemplateModal(); return; }
             if (e.key === 'S' || e.key === 's') { this.openSettingsModal(); return; }
@@ -2093,7 +2098,7 @@ class HomepageApp {
             nameEl.textContent = name;
             nameEl.setAttribute('data-text', name);
         }
-        this.refreshGreeting();
+        this.initWeather();
         document.dispatchEvent(new Event('name-changed'));
     }
 
@@ -2104,6 +2109,7 @@ class HomepageApp {
 
         this.refreshGreeting();
         // Try cache first (30-min TTL)
+        if (!window.WeatherAccess.enabled()) { this._showGeoRetry(); return; }
         try {
             const cached = JSON.parse(localStorage.getItem('homepage_weather_cache') || 'null');
             if (cached && (Date.now() - cached.ts) < 30 * 60 * 1000) {
@@ -2112,22 +2118,20 @@ class HomepageApp {
             }
         } catch {}
 
-        if (!navigator.geolocation) {
-            this._showGeoRetry();
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(
+        window.WeatherAccess.position(
             async pos => {
                 try {
                     const { latitude: lat, longitude: lon } = pos.coords;
                     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=auto`;
-                    const res = await fetch(url);
+                    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                    if (!res.ok) throw new Error('Weather unavailable');
                     const d   = await res.json();
+                    if (!window.WeatherAccess.enabled()) return;
                     const tempC = Math.round(d.current.temperature_2m);
                     const icon = WMO_ICONS[d.current.weather_code] || '🌡️';
                     try { localStorage.setItem('homepage_weather_cache', JSON.stringify({ tempC, icon, ts: Date.now() })); } catch {}
                     this.refreshGreeting(tempC, icon);
-                } catch {}
+                } catch { this._showGeoRetry(); }
             },
             () => this._showGeoRetry()
         );
@@ -2141,11 +2145,12 @@ class HomepageApp {
     _showGeoRetry() {
         const el = document.getElementById('weatherGreeting');
         if (!el) return;
-        el.innerHTML = `<span class="geo-retry-btn" id="geoRetryBtn" style="cursor:pointer;opacity:0.7;font-size:0.85rem;">📍 Enable location for weather →</span>`;
+        this.refreshGreeting();
+        el.insertAdjacentHTML('beforeend', '<button type="button" class="geo-retry-btn" id="geoRetryBtn" title="Choose a city for an Open-Meteo forecast">Weather</button>');
         el.style.opacity = '1';
         document.getElementById('geoRetryBtn')?.addEventListener('click', () => {
             localStorage.removeItem('homepage_weather_cache');
-            this.initWeather();
+            window.WeatherAccess.enable();
         });
     }
 
@@ -2155,12 +2160,13 @@ class HomepageApp {
         const h      = new Date().getHours();
         const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
         const name   = this.userName && this.userName !== 'YOUR NAME' ? `, ${this.userName}` : '';
-        let html = `Good ${period}${name}`;
+        let html = this._esc(`Good ${period}${name}`);
         if (tempC !== undefined && icon !== undefined) {
             this._lastTempC = tempC;
             this._lastTempIcon = icon;
             const display = this._toDisplayTemp(tempC);
             html += `&ensp;<span class="weather-badge" id="weatherBadge" title="Click to toggle °C / °F" style="cursor:pointer;">${icon} ${display}</span>`;
+            html += '<a class="weather-credit" href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>';
         }
         el.innerHTML    = html;
         el.style.opacity = '1';

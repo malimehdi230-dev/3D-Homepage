@@ -11,6 +11,7 @@ const extension = path.resolve(__dirname,'../custom extension');
     ignoreDefaultArgs:['--disable-extensions'],
     args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]
   });
+  try {
   const errors=[],violations=[],failed=[];
   const page=await context.newPage();
   page.on('pageerror',e=>errors.push(e.message));
@@ -52,7 +53,34 @@ const extension = path.resolve(__dirname,'../custom extension');
   await page.waitForTimeout(300);
   assert.equal(await page.locator('#statLinks').textContent(),'5');
   await page.screenshot({path:path.join(__dirname,'../.test-artifacts/screenshots','extension-popup.png'),animations:'disabled'});
+  assert.equal(await page.evaluate(()=>chrome.runtime.getManifest().permissions.includes('geolocation')),false);
+  assert.equal(await page.locator('#toggleAmbient').count(),0);
+  assert.equal(await page.locator('#ambientBtn').textContent(),'Choose sound');
+  const [backupPage]=await Promise.all([context.waitForEvent('page'),page.locator('#exportBtn').click()]);
+  backupPage.on('pageerror',e=>errors.push(e.message));
+  backupPage.on('console',m=>{if(m.text().includes('Reset failed'))console.log(m.text());});
+  await backupPage.waitForFunction(()=>window.app && window.HomepageUI);
+  await backupPage.locator('#loadingScreen').waitFor({state:'hidden'});
+  assert.equal(await backupPage.locator('#settings-pane-data').isVisible(),true,'popup opens full backup settings');
+  await backupPage.locator('#openResetBtn').click();
+  await backupPage.locator('#cancelResetBtn').click();
+  assert.equal(await backupPage.evaluate(()=>app.userName),'Ali');
+  await backupPage.evaluate(async()=>{
+    localStorage.setItem('homepage_widget_notes','Saved private note');
+    await AIProviders.add({name:'Reset test',apiKey:'test_key_not_real',baseUrl:'https://api.groq.com/openai/v1',model:'llama-3.3-70b-versatile'});
+  });
+  await backupPage.locator('#openResetBtn').click();
+  try {
+    await Promise.all([backupPage.waitForEvent('load',{timeout:10000}),backupPage.locator('#confirmResetBtn').click()]);
+  } catch (error) {
+    console.log('Reset diagnostic', await backupPage.evaluate(()=>({url:location.href,status:document.getElementById('resetStatus')?.textContent,disabled:document.getElementById('confirmResetBtn')?.disabled,notesPresent:!!localStorage.getItem('homepage_widget_notes')})));
+    throw error;
+  }
+  await backupPage.waitForFunction(()=>window.app && window.HomepageUI);
+  assert.equal(await backupPage.evaluate(()=>localStorage.getItem('homepage_widget_notes')),null);
+  assert.equal(await backupPage.evaluate(async()=>(await AIProviders.getAll()).length),0);
+  assert.equal(await backupPage.evaluate(()=>WeatherAccess.enabled()),false);
   assert.deepEqual(errors,[]); assert.deepEqual(violations,[]); assert.deepEqual(failed,[]);
-  console.log('PASS: loaded Manifest V3 extension, native provider storage, new-tab override, settings, widget visibility, persisted startup styles, popup, bundled assets, and no CSP violations.');
-  await context.close();
+  console.log('PASS: actual MV3 extension, native provider storage/reset, no device location permission, popup backup navigation, persisted styles, local assets and CSP.');
+  } finally { await context.close(); }
 })().catch(e=>{console.error(e);process.exit(1);});
