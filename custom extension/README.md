@@ -1,6 +1,6 @@
 # 3D Parallax — Chrome extension
 
-A personal new tab with resizable widgets, quick links, 18 themes, uploaded image or video wallpapers, notes, tasks, countdowns, ambient sound, optional local weather and AI tools. Version 2.4.0 uses native system fonts, clear settings, a balanced centered layout and five saved wallpapers.
+A personal new tab with resizable widgets, quick links, 18 themes, uploaded image or video wallpapers, notes, tasks, countdowns, ambient sound, optional local weather and AI tools. Version 2.5.0 uses native system fonts, clear settings, a balanced centered layout and five saved wallpapers.
 
 ## Install locally
 
@@ -27,3 +27,5 @@ npm run store-assets
 Set BROWSER_PATH to use an existing Chromium. Tests use isolated profiles and mocked weather/feedback responses; they do not send feedback emails. Runtime JavaScript, styles and icon fonts are bundled locally for Manifest V3.
 
 Read [release notes](RELEASE.md), [store submission kit](../store-kit/README.md), and [privacy policy](privacy.html). Support: [GitHub issues](https://github.com/malimehdi230-dev/3D-Homepage/issues). Licensed under the repository's Apache 2.0 license; bundled Font Awesome assets include their license in vendor.
+
+Feedback is saved in the private developer inbox. Drafts stay in the current tab until submitted; retries reuse a random reference to avoid duplicates. Optional email notification failures do not lose submissions. The same HTTPS API and CORS policy support unpacked and Chrome Web Store installations.

@@ -1,6 +1,6 @@
 # 3D Parallax privacy policy
 
-Last updated: October 13, 2026. Extension version: 2.4.0. Publisher: Muhammad Ali Mehdi.
+Last updated: October 13, 2026. Extension version: 2.5.0. Publisher: Muhammad Ali Mehdi.
 
 ## What the extension does
 
@@ -9,6 +9,8 @@ Last updated: October 13, 2026. Extension version: 2.4.0. Publisher: Muhammad Al
 ## Data kept on your device
 
 Your display name, theme, shortcuts, layout, headlines, tasks, notes, sound preferences, your selected weather city and its coordinates, searches made in the centered homepage search box, and configured AI provider keys are saved locally. Settings use localStorage and chrome.storage.local; up to five saved wallpaper files and a setup restore copy use IndexedDB. These are not automatically uploaded to the developer. AI chat messages are held in the current page session and sent to your chosen provider when you use chat.
+
+An unsent feedback draft is kept in sessionStorage for the current tab so closing the form or reloading does not lose your message. It is removed after successful submission or a local reset. It is not sent until you choose Send feedback.
 
 The storage permission saves preferences and provider keys. unlimitedStorage allows large image and video wallpapers to remain on your device. The extension does not request access to your browser history, other tabs, or the content of pages you browse.
 
@@ -21,7 +23,7 @@ The storage permission saves preferences and provider keys. unlimitedStorage all
 - If you enable AI web search, DuckDuckGo and Wikipedia receive the search query, and returned information can be included in the request to your AI provider.
 - Wallpaper searches requested through AI styling use Wallhaven. Wallpaper queries and requests for remote images are sent to Wallhaven and the selected image host. Importing a setup with a remote wallpaper also contacts that image host.
 - Searching or opening a shortcut navigates to the selected search engine or website in the normal way.
-- Submitting feedback sends your message, category, optional rating, selected theme, extension version and timestamp to the developer's feedback service at 3-d-parallax-backend.vercel.app. Vercel hosts the service and Resend delivers feedback to the developer's email inbox. The backend has no feedback database. The developer reads submitted feedback to provide support and improve the extension.
+- Submitting feedback sends your message, category, optional rating, selected theme, extension version, timestamp and a random submission reference to the developer's feedback service at 3-d-parallax-backend.vercel.app. Vercel hosts the API and Supabase stores the private feedback inbox. Only authorized publishers can read submissions, track their status and keep private follow-up notes. Resend may deliver an email notification to the developer when configured; an email failure does not discard your saved message. Repeated retries of one submission reuse its reference to avoid duplicate records. The backend uses daily-salted IP hashes for short-lived spam limits; it does not store raw IP addresses in the feedback database. Expired limit records are removed on subsequent submissions. Feedback is used for support and to improve the extension.
 - Network services receive ordinary connection information, such as your IP address, and may keep operational logs under their own policies. Configured provider keys are sent only to the provider endpoint you choose, not to the developer's feedback server.
 
 ## Your choices, backups and deletion
@@ -30,7 +32,7 @@ You can edit or remove saved shortcuts, tasks, notes and provider keys in the ex
 
 Backup files are saved to your device. API keys are excluded by default and included only if you explicitly choose that option. Wallpaper files can also be included when selected. A backup containing keys contains sensitive authentication data; keep it private.
 
-Local data remains until you delete it, reset, or uninstall. Feedback messages remain in the developer's support inbox as needed to handle the request; you can request deletion through the feedback form. Third-party AI, weather, search and image services control retention of data you send to them under their own terms. A local reset cannot delete those services' records.
+Local data remains until you delete it, reset, or uninstall. Feedback messages and private follow-up notes remain in the developer's support inbox until the developer removes them when they are no longer needed. There is no automatic expiry. You can request deletion through the feedback form or support link, quoting the reference shown after submission when available. Removing a database entry does not automatically delete a separate email notification; the developer must remove that copy too. Third-party AI, weather, search and image services control retention of data you send to them under their own terms. A local reset cannot delete those services' records.
 
 ## Limited use
 

@@ -223,6 +223,7 @@ const HomepageUI = (() => {
         Ambient.stop(); await Wallpaper.clearAll();
         if (typeof chrome !== 'undefined' && chrome.storage?.local) await chrome.storage.local.clear();
         localStorage.clear();
+        sessionStorage.removeItem('homepage_feedback_draft');
         // Inform other open homepage tabs before reloading this one.
         localStorage.setItem('homepage_reset_at', String(Date.now()));
         location.replace(location.pathname);
@@ -277,7 +278,7 @@ const HomepageUI = (() => {
       refreshLayoutChoice(); drawWidgetManager(document.querySelector('#customizationPanel .widget-manager-list'));
     });
     window.addEventListener('storage', event => {
-      if (event.key === 'homepage_reset_at') { location.reload(); return; }
+      if (event.key === 'homepage_reset_at') { sessionStorage.removeItem('homepage_feedback_draft'); location.reload(); return; }
       if (!event.key || event.key.startsWith('homepage_')) applyEffects();
       if (event.key === 'homepage_links') { window.app.links = window.app.loadLinks(); window.app.renderLinks(); }
       if (event.key === 'homepage_userName' && event.newValue) window.app.updateUserName(event.newValue);

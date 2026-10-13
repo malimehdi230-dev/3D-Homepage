@@ -1,10 +1,10 @@
-## Chrome extension 2.4.0
+## Chrome extension 2.5.0
 
-The extension in [custom extension](custom%20extension) has a balanced centered layout, a compact background picker, five saved wallpapers with non-destructive theme switching, and a dynamic Supabase wallpaper library. Widget resizing, element controls and store packaging are retained. See [release notes](custom%20extension/RELEASE.md), the [backend setup](https://github.com/malimehdi230-dev/3D-Parallax-backend), and the [Chrome Web Store kit](store-kit/README.md).
+The extension in [custom extension](custom%20extension) has a balanced centered layout, compact settings, five saved wallpapers with theme switching, and a dynamic Supabase wallpaper library. Version 2.5 adds a polished feedback form with saved drafts and safe retries, connected to a private publisher inbox for systematic triage. Widget content scales with resizing, and the Chrome upload package keeps all executable assets bundled. See [release notes](custom%20extension/RELEASE.md), the [backend setup](https://github.com/malimehdi230-dev/3D-Parallax-backend), and the [Chrome Web Store kit](store-kit/README.md).
 
 # 🎮 3D Homepage - Chrome Extension
 
-![Version](https://img.shields.io/badge/version-2.4.0-blue)
+![Version](https://img.shields.io/badge/version-2.5.0-blue)
 ![License](https://img.shields.io/badge/license-Apache_2.0-green)
 
 A beautiful Chrome extension featuring **15+ stunning 3D animated homepage templates** for your new tab page. Perfect for programmers, gamers, anime lovers, digital creators, AI developers, and more!

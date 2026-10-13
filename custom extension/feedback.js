@@ -1,346 +1,75 @@
-// feedback.js — 3D Parallax Feedback Module
-// Sends user feedback to the Vercel backend via fetch()
-
-// The deployed feedback API; requests are sent only when the user submits.
-const FEEDBACK_API = 'https://3-d-parallax-backend.vercel.app/api/feedback';
-// ─────────────────────────────────────────────────────────────────────────────
-
-const FB_GIVEN_KEY      = 'homepage_feedback_given';
-const FB_NEVER_KEY      = 'homepage_feedback_never';
-const FB_LAST_SHOWN_KEY = 'homepage_feedback_last_shown';
-
-function _todayStr() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-}
-
-function shouldShowFeedbackNudge() {
-  if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) return false;
-  if (localStorage.getItem(FB_GIVEN_KEY) === 'true') return false;
-  if (localStorage.getItem(FB_NEVER_KEY) === 'true') return false;
-  const lastShown = localStorage.getItem(FB_LAST_SHOWN_KEY);
-  if (!lastShown) return true;
-  return lastShown !== _todayStr();
-}
-
+'use strict';
+// Public endpoint works with each Chrome Web Store installation's own origin.
+const FEEDBACK_API='https://3-d-parallax-backend.vercel.app/api/feedback';
+const FB_GIVEN_KEY='homepage_feedback_given';
+const FB_DRAFT_KEY='homepage_feedback_draft';
 class FeedbackModule {
-  constructor() {
-    this.modal    = null;
-    this.nudge    = null;
-    this.isOpen   = false;
-    this._getRating = () => null;
-  }
-
-  init() {
-    this._buildModal();
-    this._buildTriggerButton();
-
-    // Wire settings panel button
-    document.getElementById('settingsFeedbackBtn')
-      ?.addEventListener('click', () => {
-        // Close settings modal first, then open feedback
-        document.getElementById('settingsModal')?.classList.remove('active');
-        setTimeout(() => this.open(), 150);
-      });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isOpen) this.close();
-    });
-
-    // Feedback stays available from the toolbar and Settings; no startup prompt.
-  }
-
-  // ── Daily nudge ─────────────────────────────────────────────────────────────
-
-  _checkDailyNudge() {
-    if (!shouldShowFeedbackNudge()) return;
-    this._buildNudge();
-  }
-
-  _buildNudge() {
-    if (this.nudge) return; // already built
-
-    const nudge = document.createElement('div');
-    nudge.id = 'feedbackNudge';
-    nudge.setAttribute('role', 'dialog');
-    nudge.setAttribute('aria-label', 'Share your feedback');
-    nudge.innerHTML = `
-      <div id="feedbackNudgeHeader">
-        <span id="feedbackNudgeTitle">
-          <i class="fas fa-comment-dots" style="color:var(--primary)"></i>
-          Enjoying 3D Parallax?
-        </span>
-        <button id="feedbackNudgeClose" aria-label="Close"><i class="fas fa-xmark"></i></button>
+  constructor(){this.modal=null;this.nudge=null;this.isOpen=false;this._rating=null;this._payload=null;this._sending=false;this._sent=false;}
+  init(){
+    const overlay=document.createElement('div');overlay.id='feedbackOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-labelledby','feedbackTitle');overlay.setAttribute('aria-hidden','true');
+    overlay.innerHTML=`<div id="feedbackModal">
+      <div id="feedbackHeader"><span id="feedbackTitle">Share feedback</span><button id="feedbackClose" aria-label="Close feedback"><i class="fas fa-xmark" aria-hidden="true"></i></button></div>
+      <div id="feedbackBody"><p class="feedback-intro">Tell us what worked, what didn’t, or what you’d like next.</p>
+        <div class="fb-field"><span class="fb-label" id="feedbackCategoryLabel">Category</span><div id="feedbackTypes" role="group" aria-labelledby="feedbackCategoryLabel">
+          <button class="fb-type-btn active" data-type="general" aria-pressed="true">General</button><button class="fb-type-btn" data-type="bug" aria-pressed="false">Bug report</button><button class="fb-type-btn" data-type="feature" aria-pressed="false">Feature request</button><button class="fb-type-btn" data-type="ui" aria-pressed="false">Design</button><button class="fb-type-btn" data-type="performance" aria-pressed="false">Performance</button><button class="fb-type-btn" data-type="praise" aria-pressed="false">Compliment</button>
+        </div></div>
+        <div class="fb-field"><span class="fb-label" id="feedbackRatingLabel">Your experience <span class="fb-optional">Optional</span></span><div class="feedback-rating-row"><div id="feedbackStars" role="group" aria-labelledby="feedbackRatingLabel">${[1,2,3,4,5].map(value=>`<button class="fb-star" data-value="${value}" aria-label="${value} ${value===1?'star':'stars'}" aria-pressed="false">★</button>`).join('')}</div><button id="clearFeedbackRating" class="fb-clear" hidden>Clear rating</button></div></div>
+        <div class="fb-field"><label class="fb-label" for="feedbackMessage">Message</label><textarea id="feedbackMessage" placeholder="For a bug, include what you tried and what happened." maxlength="2000" rows="5" aria-describedby="feedbackCharCount"></textarea><span id="feedbackCharCount">0 / 2000</span></div>
       </div>
-      <p id="feedbackNudgeMsg">Your feedback helps make it better. It only takes 30 seconds.</p>
-      <div id="feedbackNudgeActions">
-        <button id="feedbackNudgeGive"><i class="fas fa-paper-plane"></i> Give Feedback</button>
-        <button id="feedbackNudgeNever">Never show again</button>
-      </div>
-    `;
-
-    document.body.appendChild(nudge);
-    this.nudge = nudge;
-
-    // Force reflow before adding class so the transition fires
-    nudge.offsetHeight;
-    nudge.classList.add('visible');
-
-    document.getElementById('feedbackNudgeClose').addEventListener('click', () => {
-      localStorage.setItem(FB_LAST_SHOWN_KEY, _todayStr());
-      this._hideNudge();
-    });
-
-    document.getElementById('feedbackNudgeGive').addEventListener('click', () => {
-      localStorage.setItem(FB_LAST_SHOWN_KEY, _todayStr());
-      this._hideNudge();
-      setTimeout(() => this.open(), 200);
-    });
-
-    document.getElementById('feedbackNudgeNever').addEventListener('click', () => {
-      localStorage.setItem(FB_NEVER_KEY, 'true');
-      this._hideNudge();
-    });
-  }
-
-  _hideNudge() {
-    if (!this.nudge) return;
-    this.nudge.classList.remove('visible');
-    setTimeout(() => {
-      this.nudge?.remove();
-      this.nudge = null;
-    }, 350);
-  }
-
-  // ── Trigger button ───────────────────────────────────────────────────────────
-
-  _buildTriggerButton() {
-    const btn = document.createElement('button');
-    btn.id = 'feedbackTriggerBtn';
-    btn.innerHTML = '<i class="fas fa-comment-dots"></i><span>Feedback</span>';
-    btn.setAttribute('aria-label', 'Send feedback');
-    btn.title = 'Send feedback (F)';
-    btn.addEventListener('click', () => this.open());
-    document.body.appendChild(btn);
-  }
-
-  // ── Modal ────────────────────────────────────────────────────────────────────
-
-  _buildModal() {
-    const overlay = document.createElement('div');
-    overlay.id = 'feedbackOverlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Send feedback');
-
-    overlay.innerHTML = `
-      <div id="feedbackModal">
-        <div id="feedbackHeader">
-          <span id="feedbackTitle">
-            <i class="fas fa-comment-dots"></i> Send Feedback
-          </span>
-          <button id="feedbackClose" aria-label="Close feedback">
-            <i class="fas fa-xmark"></i>
-          </button>
-        </div>
-
-        <div id="feedbackBody">
-          <div class="fb-field">
-            <label class="fb-label">What kind of feedback?</label>
-            <div id="feedbackTypes">
-              <button class="fb-type-btn active" data-type="general">💬 General</button>
-              <button class="fb-type-btn" data-type="bug">🐛 Bug</button>
-              <button class="fb-type-btn" data-type="feature">✨ Feature</button>
-              <button class="fb-type-btn" data-type="praise">🙌 Praise</button>
-              <button class="fb-type-btn" data-type="ui">🎨 UI</button>
-              <button class="fb-type-btn" data-type="performance">⚡ Performance</button>
-            </div>
-          </div>
-
-          <div class="fb-field">
-            <label class="fb-label">Rate your experience</label>
-            <div id="feedbackStars">
-              <button class="fb-star" data-value="1" aria-label="1 star">★</button>
-              <button class="fb-star" data-value="2" aria-label="2 stars">★</button>
-              <button class="fb-star" data-value="3" aria-label="3 stars">★</button>
-              <button class="fb-star" data-value="4" aria-label="4 stars">★</button>
-              <button class="fb-star" data-value="5" aria-label="5 stars">★</button>
-            </div>
-          </div>
-
-          <div class="fb-field">
-            <label class="fb-label" for="feedbackMessage">Your message</label>
-            <textarea
-              id="feedbackMessage"
-              placeholder="Tell us what you think, what's broken, or what you'd love to see…"
-              maxlength="2000"
-              rows="5"
-            ></textarea>
-            <span id="feedbackCharCount">0 / 2000</span>
-          </div>
-        </div>
-
-        <p class="feedback-privacy-note">Submitting sends your message, optional rating, theme and extension version to the developer. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="https://github.com/malimehdi230-dev/3D-Homepage/issues/new" target="_blank" rel="noopener">Get support on GitHub</a></p>
-        <div id="feedbackFooter">
-          <span id="feedbackStatus"></span>
-          <button id="feedbackSubmit">
-            <i class="fas fa-paper-plane"></i> Send Feedback
-          </button>
-        </div>
-      </div>
-    `;
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) this.close();
-    });
-
-    document.body.appendChild(overlay);
-    this.modal = overlay;
-    this._bindModalEvents();
-  }
-
-  _bindModalEvents() {
-    document.getElementById('feedbackClose')
-      .addEventListener('click', () => this.close());
-
-    document.getElementById('feedbackTypes').addEventListener('click', (e) => {
-      const btn = e.target.closest('.fb-type-btn');
-      if (!btn) return;
-      document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-
-    const stars = document.querySelectorAll('.fb-star');
-    let selectedRating = 0;
-    stars.forEach(star => {
-      star.addEventListener('mouseenter', () => {
-        const val = +star.dataset.value;
-        stars.forEach(s => s.classList.toggle('hovered', +s.dataset.value <= val));
-      });
-      star.addEventListener('mouseleave', () => {
-        stars.forEach(s => s.classList.remove('hovered'));
-      });
-      star.addEventListener('click', () => {
-        selectedRating = +star.dataset.value;
-        stars.forEach(s => {
-          s.classList.toggle('selected', +s.dataset.value <= selectedRating);
-        });
-      });
-    });
-    this._getRating = () => selectedRating || null;
-
-    const textarea = document.getElementById('feedbackMessage');
-    const counter  = document.getElementById('feedbackCharCount');
-    textarea.addEventListener('input', () => {
-      const len = textarea.value.length;
-      counter.textContent = `${len} / 2000`;
-      counter.style.color = len > 1800 ? '#ef4444' : '#9ca3af';
-    });
-
-    document.getElementById('feedbackSubmit')
-      .addEventListener('click', () => this._submit());
-  }
-
-  async _submit() {
-    if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) { window.toast?.('Feedback is temporarily unavailable. You can still use the support link.', 'info'); return; }
-    const message   = document.getElementById('feedbackMessage').value.trim();
-    const type      = document.querySelector('.fb-type-btn.active')?.dataset.type ?? 'general';
-    const rating    = this._getRating();
-    const status    = document.getElementById('feedbackStatus');
-    const submitBtn = document.getElementById('feedbackSubmit');
-
-    if (!message || message.length < 3) {
-      status.textContent = '⚠ Please write at least a few words.';
-      status.style.color = '#ef4444';
-      document.getElementById('feedbackMessage').focus();
-      return;
+      <p class="feedback-privacy-note">Your message, category, optional rating, theme and version are sent when you submit. Feedback is saved privately for follow-up. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a id="feedbackSupportLink" href="https://github.com/malimehdi230-dev/3D-Homepage/issues/new" target="_blank" rel="noopener">Get support</a></p>
+      <div id="feedbackFooter"><span id="feedbackStatus" role="status" aria-live="polite"></span><button id="feedbackSubmit"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send feedback</button></div>
+    </div>`;
+    overlay.addEventListener('click',event=>{if(event.target===overlay)this.close();});document.body.append(overlay);this.modal=overlay;
+    const trigger=document.createElement('button');trigger.id='feedbackTriggerBtn';trigger.innerHTML='<i class="fas fa-comment-dots" aria-hidden="true"></i><span>Feedback</span>';trigger.setAttribute('aria-label','Share feedback');trigger.title='Share feedback (F)';trigger.onclick=()=>this.open();document.body.append(trigger);
+    document.getElementById('settingsFeedbackBtn')?.addEventListener('click',()=>{document.getElementById('settingsModal')?.classList.remove('active');setTimeout(()=>this.open(),150);});
+    document.getElementById('feedbackClose').onclick=()=>this.close();
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&this.isOpen)this.close();if(this.isOpen&&(event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();this._submit();}});
+    document.getElementById('feedbackTypes').onclick=event=>{const button=event.target.closest('[data-type]');if(!button||this._sending||this._sent)return;this._chooseType(button.dataset.type);this._changed();};
+    for(const star of document.querySelectorAll('.fb-star')){
+      star.onclick=()=>{if(!this._sending&&!this._sent){this._setRating(Number(star.dataset.value));this._changed();}};
+      star.onmouseenter=()=>{if(!this._sending&&!this._sent)document.querySelectorAll('.fb-star').forEach(item=>item.classList.toggle('hovered',Number(item.dataset.value)<=Number(star.dataset.value)));};
+      star.onmouseleave=()=>document.querySelectorAll('.fb-star').forEach(item=>item.classList.remove('hovered'));
     }
-
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
-    status.textContent  = '';
-
-    const theme   = document.body.dataset.template
-      ?? localStorage.getItem('homepage_template')
-      ?? 'unknown';
-    const version = (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version)
-      ?? '2.4.0';
-
-    try {
-      const res = await fetch(FEEDBACK_API, {
-        method:  'POST',
-        signal: AbortSignal.timeout(15000),
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message, type, rating, theme, version,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (res.status === 429) {
-        throw new Error('Too many submissions. Please wait a minute before trying again.');
-      }
-
-      if (res.status === 404) {
-        throw new Error('The feedback service is unavailable. Please try again later.');
-      }
-
-      let data;
-      try { data = await res.json(); }
-      catch { throw new Error('The feedback service returned an unexpected response. Please try again later.'); }
-
-      if (res.ok && data.success) {
-        submitBtn.innerHTML        = '<i class="fas fa-check"></i> Sent!';
-        submitBtn.style.background = 'var(--primary)';
-        submitBtn.style.color      = '#0a0a0f';
-        status.textContent         = 'Thank you! Your feedback has been received.';
-        status.style.color         = 'var(--primary)';
-
-        // Dismiss nudge forever — user has given feedback
-        localStorage.setItem(FB_GIVEN_KEY, 'true');
-
-        setTimeout(() => { this.close(); this._reset(); }, 2000);
-      } else {
-        throw new Error(data.error ?? 'Unknown error');
-      }
-
-    } catch (err) {
-      submitBtn.disabled  = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Feedback';
-      status.textContent  = `⚠ ${err.message || 'Network error. Please try again.'}`;
-      status.style.color  = '#ef4444';
-    }
+    document.getElementById('clearFeedbackRating').onclick=()=>{this._setRating(null);this._changed();};
+    document.getElementById('feedbackMessage').oninput=()=>{document.getElementById('feedbackCharCount').textContent=document.getElementById('feedbackMessage').value.length+' / 2000';this._changed();};
+    document.getElementById('feedbackSubmit').onclick=()=>this._submit();
+    this._restoreDraft();
   }
-
-  _reset() {
-    document.getElementById('feedbackMessage').value = '';
-    document.getElementById('feedbackCharCount').textContent = '0 / 2000';
-    document.getElementById('feedbackStatus').textContent = '';
-    const sb = document.getElementById('feedbackSubmit');
-    sb.disabled         = false;
-    sb.innerHTML        = '<i class="fas fa-paper-plane"></i> Send Feedback';
-    sb.style.background = '';
-    sb.style.color      = '';
-    document.querySelectorAll('.fb-type-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
-    document.querySelectorAll('.fb-star').forEach(s => s.classList.remove('selected', 'hovered'));
+  _chooseType(type){document.querySelectorAll('.fb-type-btn').forEach(button=>{const chosen=button.dataset.type===type;button.classList.toggle('active',chosen);button.setAttribute('aria-pressed',String(chosen));});}
+  _setRating(value){this._rating=value;document.querySelectorAll('.fb-star').forEach(star=>{star.classList.toggle('selected',Number(star.dataset.value)<=value);star.setAttribute('aria-pressed',String(Number(star.dataset.value)===value));});document.getElementById('clearFeedbackRating').hidden=!value;}
+  _getRating(){return this._rating;}
+  _changed(){this._payload=null;this._saveDraft();document.getElementById('feedbackStatus').textContent='';}
+  _saveDraft(){try{sessionStorage.setItem(FB_DRAFT_KEY,JSON.stringify({message:document.getElementById('feedbackMessage').value,type:document.querySelector('.fb-type-btn.active').dataset.type,rating:this._rating,payload:this._payload}));}catch{}}
+  _restoreDraft(){
+    try{const draft=JSON.parse(sessionStorage.getItem(FB_DRAFT_KEY)||'null');if(!draft||typeof draft.message!=='string'||draft.message.length>2000)return;
+      document.getElementById('feedbackMessage').value=draft.message;document.getElementById('feedbackCharCount').textContent=draft.message.length+' / 2000';
+      const type=['general','bug','feature','ui','performance','praise'].includes(draft.type)?draft.type:'general';this._chooseType(type);this._setRating(Number.isInteger(draft.rating)&&draft.rating>=1&&draft.rating<=5?draft.rating:null);
+      const payload=draft.payload;if(payload?.message===draft.message.trim()&&payload.type===type&&payload.rating===this._rating&&/^[0-9a-f-]{36}$/i.test(payload.submission_id))this._payload=payload;
+    }catch{}
   }
-
-  open() {
-    if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) return;
-    this._opener = document.activeElement;
-    this.modal.classList.add('open');
-    this.isOpen = true;
-    setTimeout(() => document.getElementById('feedbackMessage')?.focus(), 300);
+  _lock(value){this.modal.querySelectorAll('#feedbackBody button,#feedbackBody textarea').forEach(element=>element.disabled=value);}
+  async _submit(){
+    if(this._sent){this.close();return;}if(this._sending)return;
+    if(window.ExtensionService&&!ExtensionService.enabled('feedbackEnabled')){window.toast?.('Feedback is temporarily unavailable. You can use the support link.','info');return;}
+    const message=document.getElementById('feedbackMessage').value.trim(),status=document.getElementById('feedbackStatus'),button=document.getElementById('feedbackSubmit');
+    if(Array.from(message).length<3){status.textContent='Please write at least 3 characters.';status.classList.add('error');document.getElementById('feedbackMessage').focus();return;}
+    this._payload||={submission_id:crypto.randomUUID(),message,type:document.querySelector('.fb-type-btn.active').dataset.type,rating:this._rating,theme:document.body.dataset.template||localStorage.getItem('homepage_template')||'unknown',version:globalThis.chrome?.runtime?.getManifest?.()?.version||'2.5.0',timestamp:new Date().toISOString()};
+    this._saveDraft();this._sending=true;this._lock(true);button.disabled=true;button.innerHTML='<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Sending…';status.textContent='';status.classList.remove('error');
+    try{
+      const response=await fetch(FEEDBACK_API,{method:'POST',credentials:'omit',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/json'},body:JSON.stringify(this._payload)});
+      if(response.status===429)throw new Error('Please wait a minute before sending again. Your draft is kept.');
+      if(response.status===404)throw new Error('The feedback service is unavailable. Your draft is kept.');
+      const data=await response.json().catch(()=>null);if(!data)throw new Error('The service returned an unexpected response. Your draft is kept.');
+      if(!response.ok||data.success!==true)throw new Error(data.error||'Could not save feedback. Please try again.');
+      this._sent=true;this._payload=null;try{sessionStorage.removeItem(FB_DRAFT_KEY);}catch{}
+      localStorage.setItem(FB_GIVEN_KEY,'true');button.textContent='Done';status.textContent='Thank you! Your feedback has been received.';
+      if(data.id&&/^[0-9a-f-]{36}$/i.test(data.id)){const reference=document.createElement('small');reference.className='feedback-sent-reference';reference.textContent='Reference: '+data.id;status.append(reference);}
+    }catch(error){status.textContent=error.name==='TimeoutError'||error.name==='TypeError'?'Could not reach the service. Your draft is kept; try again when you’re online.':error.message;status.classList.add('error');if(error.message?.startsWith('This submission changed')){this._payload=null;this._saveDraft();}button.innerHTML='<i class="fas fa-paper-plane" aria-hidden="true"></i> Try again';}
+    finally{this._sending=false;button.disabled=false;this._lock(this._sent);}
   }
-
-  close() {
-    this.modal.classList.remove('open');
-    this.isOpen = false;
-    this._opener?.focus();
-  }
-
-  toggle() {
-    this.isOpen ? this.close() : this.open();
-  }
+  _reset(){this._sent=false;this._payload=null;this._lock(false);document.getElementById('feedbackMessage').value='';document.getElementById('feedbackCharCount').textContent='0 / 2000';document.getElementById('feedbackStatus').textContent='';document.getElementById('feedbackStatus').classList.remove('error');document.getElementById('feedbackSubmit').innerHTML='<i class="fas fa-paper-plane" aria-hidden="true"></i> Send feedback';this._chooseType('general');this._setRating(null);}
+  open(){if(this.isOpen||window.ExtensionService&&!ExtensionService.enabled('feedbackEnabled'))return;this._opener=document.activeElement;this.modal.classList.add('open');this.modal.setAttribute('aria-hidden','false');this.isOpen=true;if(window.ExtensionService)document.getElementById('feedbackSupportLink').href=ExtensionService.config().supportUrl;requestAnimationFrame(()=>{if(this.isOpen)(this._sent?document.getElementById('feedbackSubmit'):document.getElementById('feedbackMessage')).focus();});}
+  close(){this.modal.classList.remove('open');this.modal.setAttribute('aria-hidden','true');this.isOpen=false;if(this._sent)this._reset();this._opener?.isConnected&&this._opener.focus();}
+  toggle(){this.isOpen?this.close():this.open();}
 }
-
-window.Feedback = new FeedbackModule();
+window.Feedback=new FeedbackModule();
