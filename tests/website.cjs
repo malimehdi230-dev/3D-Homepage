@@ -21,7 +21,7 @@ const repo=path.resolve(__dirname,'..'),root=path.join(repo,'website-dist'),arti
     const routes={'/':'index.html','/install':'install.html','/help':'help.html','/changelog':'changelog.html','/privacy':'privacy.html'};
     const relative=routes[url.pathname]||decodeURIComponent(url.pathname).slice(1),file=path.resolve(root,relative);
     let chosen=file;if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){chosen=path.join(root,'404.html');res.statusCode=404;}
-    res.setHeader('Content-Security-Policy',policy);res.setHeader('Content-Type',{'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.woff2':'font/woff2','.xml':'application/xml'}[path.extname(chosen)]||'text/plain');res.end(fs.readFileSync(chosen));
+    res.setHeader('Content-Security-Policy',policy);res.setHeader('Content-Type',{'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.woff2':'font/woff2','.xml':'application/xml'}[path.extname(chosen)]||'text/plain');res.end(fs.readFileSync(chosen));
   });
   await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
   const browser=await chromium.launch({headless:true,executablePath:process.env.BROWSER_PATH||chromium.executablePath()});
@@ -32,6 +32,12 @@ const repo=path.resolve(__dirname,'..'),root=path.join(repo,'website-dist'),arti
     assert.equal(await page.locator('h1').count(),1);assert.match(await page.title(),/New Tab Extension for Chrome/);
     assert.equal(await page.locator('[rel=canonical]').getAttribute('href'),'https://3dparallax.app/');
     const graph=JSON.parse(await page.locator('[type="application/ld+json"]').textContent());assert.equal(graph['@graph'][0]['@type'],'WebSite');assert.equal(JSON.stringify(graph).includes('aggregateRating'),false);
+    assert.equal(graph['@graph'][1].image,'https://3dparallax.app/assets/logo-p-512.png');
+    assert.equal(await page.locator('.brand img[src="/assets/logo-p-512.png"]').count(),2,'new logo appears in header and footer');
+    assert.equal(await page.locator('link[rel=icon]').getAttribute('href'),'/assets/logo-p-48.png');
+    await page.locator('#wallpapers').scrollIntoViewIfNeeded();await page.waitForFunction(()=>[...document.querySelectorAll('#wallpapers img')].every(img=>img.complete&&img.naturalWidth>0));
+    assert.equal(await page.locator('.wallpaper-art').count(),3);assert.equal(await page.locator('.library-grid .library-tile').count(),4);assert.equal(await page.locator('.personal-cover').isVisible(),true);
+    await page.locator('#wallpapers').screenshot({path:path.join(artifacts,'wallpaper-previews.png')});await page.evaluate(()=>scrollTo(0,0));
     await page.screenshot({path:path.join(artifacts,'home-desktop.png'),fullPage:true,animations:'disabled'});
     for(const link of await page.locator('[data-install]').all())assert.equal(await link.getAttribute('href'),'/install');
     await page.locator('.faq-list summary').first().click();assert.equal(await page.locator('.faq-list details').first().getAttribute('open'),'');

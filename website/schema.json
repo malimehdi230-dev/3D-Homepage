@@ -18,9 +18,12 @@
       "operatingSystem": "Chrome on Windows, macOS and Linux",
       "description": "Customize Chrome's New Tab page with resizable widgets, quick links, 18 themes, personal wallpapers and optional weather and AI tools.",
       "screenshot": "https://3dparallax.app/assets/homepage.png",
-      "image": "https://3dparallax.app/assets/icon128.png",
+      "image": "https://3dparallax.app/assets/logo-p-512.png",
       "isAccessibleForFree": true,
-      "author": {"@type": "Person", "name": "Muhammad Ali Mehdi"}
+      "author": {
+        "@type": "Person",
+        "name": "Muhammad Ali Mehdi"
+      }
     }
   ]
 }

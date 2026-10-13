@@ -15,7 +15,8 @@ The library, feedback and publisher settings stay in the existing Supabase proje
 **Search and sharing**
 
 - Each public page has a distinct title, description, canonical URL and crawlable content without JavaScript.
-- Open Graph and Twitter metadata use a real prepared promotional image.
+- Open Graph and Twitter metadata use a prepared promotional image with the new layered-P logo and an actual extension screenshot.
+- The header, footer, favicon and software structured-data image use the new logo. The three wallpaper cards contain a theme preview, personal photo collection and an example library gallery. Scenic preview images are optimized local WebP files and do not change the publisher's catalog; their generation prompts are in `assets/wallpapers/README.md`.
 - The home page includes WebSite and SoftwareApplication structured data with verified product facts. It includes no invented ratings/reviews and makes no promise of rich-result eligibility.
 - `/sitemap.xml` lists the five public pages. `/robots.txt` points to the sitemap and allows crawling so Google can read the demo/API/manifest `noindex` headers. These URLs stay outside the sitemap.
 - `search-verification.json` keeps the owner's Google Search Console verification tokens. Builds place their meta tags directly in each page's HTML head, without JavaScript or an extra request. Keep verified owners' tokens when updating this file.

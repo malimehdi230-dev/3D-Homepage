@@ -78,6 +78,7 @@ Chrome requires disclosure of local processing as well as transmission. Describe
 | Web history | Searches made in the centered homepage search box are saved locally; manually saved shortcut URLs are stored locally. Chrome browsing history is not read. |
 | Personal communications | AI messages go to the chosen provider. Submitted feedback is saved in a private Supabase inbox for the developer, with optional Resend email notifications. Unsent drafts stay in the current tab until submission, reset or the tab session ends. |
 | Website content | User-entered notes/tasks/headlines, uploaded wallpaper files and requested web-search results are handled for homepage features. |
+| User activity | Pointer positions and drag/resize interactions are processed locally for visual effects and layout controls. No interaction analytics or persistent cursor/keystroke logs are implemented. The privacy-answer guide recommends conservative disclosure of this local handling. |
 
 No dedicated collection of financial/payment data, health data or browsing interaction telemetry is implemented. Do not select “no user data” because the app stores some data locally and offers optional network features. Confirm the dashboard's final category wording against these actual behaviors, and certify the Limited Use statements only after reading them.
 

@@ -1,6 +1,6 @@
 # 3D Parallax privacy policy
 
-Last updated: October 13, 2026. Extension version: 2.5.0. Publisher: Muhammad Ali Mehdi.
+Last updated: October 14, 2026. Extension version: 2.5.0. Publisher: Muhammad Ali Mehdi.
 
 ## What the extension does
 
@@ -9,6 +9,8 @@ Last updated: October 13, 2026. Extension version: 2.5.0. Publisher: Muhammad Al
 ## Data kept on your device
 
 Your display name, theme, shortcuts, layout, headlines, tasks, notes, sound preferences, your selected weather city and its coordinates, searches made in the centered homepage search box, and configured AI provider keys are saved locally. Settings use localStorage and chrome.storage.local; up to five saved wallpaper files and a setup restore copy use IndexedDB. These are not automatically uploaded to the developer. AI chat messages are held in the current page session and sent to your chosen provider when you use chat.
+
+Pointer positions and local drag/resize interactions are processed on this device for parallax effects and layout controls. The extension does not create persistent cursor or keystroke logs, collect interaction analytics or track activity across other websites.
 
 An unsent feedback draft is kept in sessionStorage for the current tab so closing the form or reloading does not lose your message. It is removed after successful submission or a local reset. It is not sent until you choose Send feedback.
 
