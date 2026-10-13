@@ -28,6 +28,6 @@ The extension runs without weather or an AI key. Reviewers can load it, add a sh
 
 The backend status endpoint checks whether feedback sender environment variables exist. A configured status does not verify delivery or the sender domain. API tests mock email delivery and do not send messages.
 
-Before submitting version 2.4.0, configure the Supabase project and production backend variables, publish your initial wallpaper collection in `/admin`, and verify Library → Save & use → offline reload in the production extension. The catalog is dynamic and begins empty; the ZIP contains no stock wallpaper catalog. The backend README provides the migration and setup steps. Developer controls contain data only, with no remotely executable code.
+The Supabase schema and production backend variables are configured, and the live library/configuration endpoints are working. Before submitting version 2.4.0, create your publisher account with a private password, publish your initial wallpaper collection in [the publisher dashboard](https://3-d-parallax-backend.vercel.app/admin), and check Library → Save & use with your artwork. The catalog is dynamic and begins empty; the ZIP contains no stock wallpaper catalog. The backend README provides the account and deployment steps. Developer controls contain data only, with no remotely executable code.
 
 Image specifications are based on [Chrome's image requirements](https://developer.chrome.com/docs/webstore/images). Submission steps follow [the publishing documentation](https://developer.chrome.com/docs/webstore/publish).

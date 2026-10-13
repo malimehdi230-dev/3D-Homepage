@@ -17,7 +17,7 @@ Make your new tab a place you enjoy coming back to.
 - Resize widgets and their content together. Move them with drag and drop, fine-tune their size, or remove empty rows with Tidy up.
 - Keep favorite websites close with compact shortcuts you can add, remove and reorder.
 - Choose from 18 themes, including Minimal Dark, and switch back to a saved photo or video without losing it. Keep up to five wallpapers on this device.
-- Browse a developer-published wallpaper library with search and categories. Download a file or save and apply it for offline use when the library is configured.
+- Browse a developer-published wallpaper library with search and categories. Download a file or save and apply it for offline use.
 - Add a clock, date, greeting, search, weather, notes, tasks, countdown and ambient sound.
 - Use clear settings to show or hide elements and adjust sizes and visual effects.
 - Undo layout changes and export a backup of your setup.
