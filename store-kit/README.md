@@ -5,6 +5,8 @@ The extension upload ZIP is generated separately from these listing assets. Scre
 | File | Use |
 | --- | --- |
 | `LISTING.md` | Listing copy, purpose, permission explanations and privacy practices |
+| `DESCRIPTION.md` | Ready-to-paste short and full Chrome Web Store descriptions |
+| `brand-v2/` | New layered-P logo, transparent PNG exports and generation prompt |
 | `assets/icon128.png` | Store icon |
 | `assets/promo-small.png` | Required 440 × 280 promotional tile |
 | `assets/promo-marquee.png` | Optional 1400 × 560 promotional image |
