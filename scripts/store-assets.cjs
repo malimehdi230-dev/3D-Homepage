@@ -40,6 +40,19 @@ const executablePath = process.env.BROWSER_PATH || chromium.executablePath();
     await page.keyboard.press('Escape');
     await page.locator('#customizeBtn').click();
     await capture('04-elements.png');
+    await page.locator('#cpCloseBtn').click();
+    await page.evaluate(async()=>{
+      for (const [name,a,b] of [['Quiet morning','#bbcdb9','#6b9386'],['Blue hour','#718ca6','#24364f'],['Warm light','#e8cbb3','#a47672']]) {
+        const canvas=document.createElement('canvas');canvas.width=960;canvas.height=600;
+        const ctx=canvas.getContext('2d'),gradient=ctx.createLinearGradient(0,0,960,600);
+        gradient.addColorStop(0,a);gradient.addColorStop(1,b);ctx.fillStyle=gradient;ctx.fillRect(0,0,960,600);
+        ctx.fillStyle='#ffffff18';ctx.beginPath();ctx.arc(710,480,270,0,Math.PI*2);ctx.fill();
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        await Wallpaper.setFromFile(new File([blob],name+'.png',{type:'image/png'}));
+      }
+      await Wallpaper.useTheme();BackgroundPicker.open('saved');
+    });
+    await capture('05-backgrounds.png');
   } finally { await context.close(); }
 
   const browser=await chromium.launch({executablePath,headless:true});
@@ -64,6 +77,6 @@ const executablePath = process.env.BROWSER_PATH || chromium.executablePath();
       await page.close();
     }
     fs.copyFileSync(path.join(extension,'icons/icon128.png'),path.join(output,'icon128.png'));
-    console.log('Created four 1280×800 screenshots, 440×280 and 1400×560 promotional images, and store icon.');
+    console.log('Created five 1280×800 screenshots, 440×280 and 1400×560 promotional images, and store icon.');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exit(1);});

@@ -162,7 +162,7 @@ const server = http.createServer((req,res) => {
   await page.locator('#feedbackSubmit').click();
   await page.waitForFunction(()=>document.getElementById('feedbackStatus').textContent.includes('received'));
   assert.equal(feedbackRequests.at(-1).url,'https://3-d-parallax-backend.vercel.app/api/feedback');
-  assert.equal(feedbackRequests.at(-1).body.version,'2.3.0');
+  assert.equal(feedbackRequests.at(-1).body.version,JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8')).version);
   assert.deepEqual(errors,[],'No JavaScript errors');
   assert.deepEqual(cspErrors,[],'No CSP errors');
   console.log('PASS: navigation, name saving, URL validation, effects, live sizes, undo, widget settings, overlap handling, link sync, >12 links, search shortcut, adding widgets, classic view, visibility persistence, mobile layout, backup key opt-in, invalid import handling, mocked feedback success/404 handling, and MV3 CSP.');

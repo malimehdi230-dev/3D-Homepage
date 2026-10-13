@@ -14,7 +14,7 @@ archive = parser.parse_args().output.resolve()
 files = [root / name for name in [
     'manifest.json','index.html','popup.html','privacy.html','styles.css','ui.css',
     'preferences.js','ui.js','script.js','templates.js','widgets.js','weather.js',
-    'wallpaper.js','ai-providers.js','ambient.js','setup.js','makeover.js','sharing.js',
+    'wallpaper.js','backgrounds.js','ai-providers.js','ambient.js','setup.js','makeover.js','sharing.js',
     'interactions.js','feedback.js','popup.js','models.json',
 ]]
 files += list((root / 'icons').rglob('*.png'))

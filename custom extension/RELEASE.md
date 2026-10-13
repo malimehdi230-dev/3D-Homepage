@@ -1,21 +1,15 @@
-# 3D Parallax 2.3.0
+# 3D Parallax 2.4.0
 
-Resizing a widget now scales its actual content. Fonts, shortcut icons and search controls follow the usable space inside the card, excluding the edit header and small padding. Long names, dates and clocks with seconds fit inside the available width. A Content size control lets you fine-tune each widget.
+The centered layout now aligns the shortcut row with the clock, name and search. Old bottom-dock offsets are removed, and the row scrolls within the viewport when more links are added. The main interface stays readable when 3D animations are paused.
 
-The default search and shortcut widgets use eight columns. Edit headers are smaller, and Tidy up removes empty rows without changing your widget widths. Undo restores the previous arrangement. Elements uses clear on/off switches alongside each widget's settings button.
+Themes opens a compact background picker with **Built-in themes**, **My wallpapers**, and **Library**. Keep up to five images or videos locally, switch among them, or use a built-in theme without deleting the collection. The previous single wallpaper migrates automatically. Each saved card has Use and Remove controls; the active source and collection count are visible in Background settings. Blur, dimming and depth live under Wallpaper adjustments.
 
-Weather is off until enabled and uses a city you choose, without device location permission. It can be disabled in General. Ambient sound has working controls, and the popup opens the sound, backup and reset screens. Reset asks for confirmation and removes preferences, wallpaper files and restore copies, notes, tasks, AI keys and the selected weather city. Other open homepage tabs reload after a reset.
+The online catalog is published through the backend admin dashboard and stored in Supabase PostgreSQL and Storage. Users can search, filter by category, page through the collection, download a file, or Save & use it offline. The developer can manage drafts/publication, featured entries, categories, announcements, support links, default themes for new installations and optional feature availability. Remote configuration contains validated data only; all executable extension code remains bundled.
 
-Fresh installs start with Minimal Dark and a Welcome heading. Saved themes and layouts are preserved. Static headlines render correctly in widget view, optional effects hide their related decorations, and feedback stays available without an automatic startup prompt.
+The **Mehdi IT Sol** Supabase project still needs its migration and production environment variables before the online library can serve content. The extension displays a setup message while the catalog is unavailable; built-in themes and personal files keep working. See the backend README for setup. No developer credentials or wallpaper seed data are embedded in this package.
 
-## Install and check
+## Verify and package
 
-Reload this folder at chrome://extensions, then open a new tab. In widget mode, drag a corner to resize; the content should grow immediately. Use the settings icon for content scale and exact dimensions. Tidy up and Undo help adjust older layouts with empty rows.
+Run npm test from the repo root. Checks include real pointer resizing, navigation/forms/backups, native Chrome extension loading, old wallpaper migration, non-destructive switching, concurrent five-file enforcement, offline downloaded wallpaper restore, centered desktop/mobile alignment and public feature controls. Backend API/dashboard checks mock storage and Auth; no live files, paid AI calls or feedback emails are sent by tests.
 
-`npm test` checks UI navigation, persistence, forms, backups, link synchronization, real pointer resizing for eight visual widgets, long clock formats, content scale, tidy/undo, city selection/disable, reset cancellation and data deletion. A separate check loads the actual Manifest V3 extension to verify native storage, popup behavior, local assets and CSP. Backend tests use a mock email sender. No paid AI requests or feedback emails are sent by these tests.
-
-## Store package
-
-`python scripts/package-extension.py` creates a checked upload ZIP in dist. The [store kit](../store-kit/README.md) contains listing copy, privacy disclosures, store screenshots and promotional images. The privacy policy is available in the extension and as [public source](../PRIVACY.md). The backend also serves the same policy at /privacy.
-
-Store submission and Google's review are completed through the publisher's Chrome Web Store account.
+python scripts/package-extension.py builds the checked Chrome upload ZIP. The store kit contains refreshed screenshots, listing copy, disclosures and promotional assets. Google review and publisher account setup are completed in the Chrome Web Store dashboard.

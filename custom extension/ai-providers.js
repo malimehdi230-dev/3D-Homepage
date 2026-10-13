@@ -222,6 +222,7 @@ const AIProviders = (() => {
    * @param {Object} opts      { stream, timeout, temperature, maxTokens }
    */
   async function aiComplete(messages, opts = {}) {
+    if (window.ExtensionService && !ExtensionService.enabled('aiEnabled')) throw new Error('AI tools are temporarily unavailable.');
     let cands;
     try { cands = await _candidates(); } catch { cands = []; }
 

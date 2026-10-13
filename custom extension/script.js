@@ -658,7 +658,7 @@ class HomepageApp {
             const file = e.dataTransfer?.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
-            await Wallpaper.setFromFile(file);
+            try { await Wallpaper.setFromFile(file); } catch (error) { window.toast?.(error.message, 'error', 5000); return; }
             this._updateWpThumbnail();
             window.toast?.('Wallpaper set by drag & drop!', 'success', 2000);
         });
@@ -1153,7 +1153,7 @@ class HomepageApp {
         if (!grid) return;
 
         grid.innerHTML = Object.values(TEMPLATES).map(template => {
-            const isActive = this.currentTemplate === template.id;
+            const isActive = this.currentTemplate === template.id && Wallpaper.mode() === 'theme';
             return `
             <div class="template-card ${isActive ? 'active' : ''}"
                  style="--template-color: ${template.colors.primary};"
@@ -1189,9 +1189,9 @@ class HomepageApp {
         this.applyTemplate(templateId);
         window.toast?.(`Template "${TEMPLATES[templateId]?.name || templateId}" applied.`, 'success', 2000);
         
-        // Disable custom wallpaper when selecting a prebuilt theme
+        // Switch backgrounds without deleting the saved collection
         if (window.Wallpaper) {
-            Wallpaper.clear();
+            Wallpaper.useTheme();
         }
         
         this.renderTemplateGrid();
@@ -1537,6 +1537,7 @@ class HomepageApp {
 
     // ========== AI CHAT ==========
     openAIChatModal() {
+        if (window.ExtensionService && !ExtensionService.enabled('aiEnabled')) { window.toast?.('AI tools are temporarily unavailable.', 'info'); return; }
         const modal = document.getElementById('aiChatModal');
         if (modal) {
             modal.classList.add('active');
@@ -2200,7 +2201,7 @@ class HomepageApp {
             picker.addEventListener('change', async e => {
                 const file = e.target.files[0];
                 if (!file) return;
-                await Wallpaper.setFromFile(file);
+                try { await Wallpaper.setFromFile(file); } catch (error) { picker.value = ''; window.toast?.(error.message, 'error', 5000); return; }
                 this._updateWpThumbnail();
                 picker.value = '';
                 window.toast?.('Wallpaper set!', 'success', 2000);
@@ -2209,9 +2210,9 @@ class HomepageApp {
 
         if (clearBtn) {
             clearBtn.addEventListener('click', async () => {
-                await Wallpaper.clear();
+                await Wallpaper.useTheme();
                 this._updateWpThumbnail();
-                window.toast?.('Wallpaper cleared.', 'info', 2000);
+                window.toast?.('Built-in theme restored. Your wallpapers are still saved.', 'info', 2000);
             });
         }
 
@@ -2321,8 +2322,15 @@ class HomepageApp {
             return;
         }
 
+        if (data['__wallpaper_blob__'] && data['__wallpaper_type__']) {
+            try {
+                const blob = this._base64ToBlob(data['__wallpaper_blob__'], data['__wallpaper_type__']);
+                await Wallpaper.setFromFile(blob);
+            } catch (error) { window.toast?.('Backup could not be restored: ' + error.message, 'error', 6000); return; }
+        }
+        const localOnly = ['homepage_wallpaper_active_id', 'homepage_background_mode', 'homepage_wallpaper_remote_url', 'homepage_service_config'];
         for (const [k, v] of Object.entries(data)) {
-            if (k.startsWith('homepage_') && typeof v === 'string') {
+            if (k.startsWith('homepage_') && typeof v === 'string' && !localOnly.includes(k)) {
                 localStorage.setItem(k, v);
                 if (typeof chrome !== 'undefined' && chrome?.storage?.local) chrome.storage.local.set({ [k]: v });
             }
@@ -2336,13 +2344,6 @@ class HomepageApp {
                     for (const provider of providers) if (provider && typeof provider.apiKey === 'string') await AIProviders.add(provider);
                 }
             } catch { window.toast?.('API keys could not be restored.', 'error'); }
-        }
-
-        if (data['__wallpaper_blob__'] && data['__wallpaper_type__']) {
-            try {
-                const blob = this._base64ToBlob(data['__wallpaper_blob__'], data['__wallpaper_type__']);
-                await Wallpaper.setFromFile(blob);
-            } catch {}
         }
 
         window.toast?.('Settings imported — reloading…', 'success', 2000);

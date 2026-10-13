@@ -14,6 +14,7 @@ function _todayStr() {
 }
 
 function shouldShowFeedbackNudge() {
+  if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) return false;
   if (localStorage.getItem(FB_GIVEN_KEY) === 'true') return false;
   if (localStorage.getItem(FB_NEVER_KEY) === 'true') return false;
   const lastShown = localStorage.getItem(FB_LAST_SHOWN_KEY);
@@ -240,6 +241,7 @@ class FeedbackModule {
   }
 
   async _submit() {
+    if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) { window.toast?.('Feedback is temporarily unavailable. You can still use the support link.', 'info'); return; }
     const message   = document.getElementById('feedbackMessage').value.trim();
     const type      = document.querySelector('.fb-type-btn.active')?.dataset.type ?? 'general';
     const rating    = this._getRating();
@@ -261,7 +263,7 @@ class FeedbackModule {
       ?? localStorage.getItem('homepage_template')
       ?? 'unknown';
     const version = (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version)
-      ?? '2.3.0';
+      ?? '2.4.0';
 
     try {
       const res = await fetch(FEEDBACK_API, {
@@ -323,6 +325,7 @@ class FeedbackModule {
   }
 
   open() {
+    if (window.ExtensionService && !ExtensionService.enabled('feedbackEnabled')) return;
     this._opener = document.activeElement;
     this.modal.classList.add('open');
     this.isOpen = true;

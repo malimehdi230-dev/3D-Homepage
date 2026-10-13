@@ -134,6 +134,7 @@ const Ambient = (() => {
 
   // ── Public API ────────────────────────────────────────────────────────────
   function start(kind) {
+    if (window.ExtensionService && !ExtensionService.enabled('ambientEnabled')) return;
     if (kind !== 'rain' && kind !== 'lofi') return stop();
     if (!_ensureCtx()) { console.warn('[Ambient] no audio context'); return; }
     _teardown();

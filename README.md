@@ -1,11 +1,11 @@
-## Chrome extension 2.3.0
+## Chrome extension 2.4.0
 
-The extension in [custom extension](custom%20extension) now scales content when resizing widgets, has tighter spacing, clearer element switches, optional city weather and complete reset/backup controls. See the [release notes](custom%20extension/RELEASE.md) and [Chrome Web Store submission kit](store-kit/README.md).
+The extension in [custom extension](custom%20extension) has a balanced centered layout, a compact background picker, five saved wallpapers with non-destructive theme switching, and a dynamic Supabase wallpaper library. Widget resizing, element controls and store packaging are retained. See [release notes](custom%20extension/RELEASE.md), the [backend setup](https://github.com/malimehdi230-dev/3D-Parallax-backend), and the [Chrome Web Store kit](store-kit/README.md).
 
 # 🎮 3D Homepage - Chrome Extension
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue)
-![License](https://img.shields.io/badge/license-Apache-green)
+![Version](https://img.shields.io/badge/version-2.4.0-blue)
+![License](https://img.shields.io/badge/license-Apache_2.0-green)
 
 A beautiful Chrome extension featuring **15+ stunning 3D animated homepage templates** for your new tab page. Perfect for programmers, gamers, anime lovers, digital creators, AI developers, and more!
 

@@ -97,7 +97,9 @@ const server = http.createServer((req, res) => {
     await page.locator('#cancelResetBtn').click();
     assert.equal(await page.evaluate(() => WidgetCanvas.getLayout().length),3, 'cancel reset preserves layout');
     await page.evaluate(async () => {
-      await Wallpaper.setFromFile(new File(['test'], 'wallpaper.png', {type:'image/png'}));
+      const canvas=document.createElement('canvas');canvas.width=48;canvas.height=32;
+      const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
+      await Wallpaper.setFromFile(new File([blob], 'wallpaper.png', {type:'image/png'}));
       await Wallpaper.backup();
       localStorage.setItem('homepage_widget_notes','Personal notes');
       await AIProviders.add({name:'Test',apiKey:'test_key',baseUrl:'https://api.groq.com/openai/v1',model:'llama-3.3-70b-versatile'});

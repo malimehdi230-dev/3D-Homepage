@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.4.0] — 2026-10-13
+
+- Fix centered shortcuts by removing inherited bottom-dock positioning; keep content centered on desktop and mobile.
+- Add a compact background picker with built-in themes, five saved wallpapers and a live library.
+- Preserve uploaded files when changing themes; migrate the previous single wallpaper and retain selection across reloads.
+- Validate photos/videos before saving, reject a sixth file safely under concurrent imports, and clear the whole collection on reset.
+- Add searchable, categorized, paginated backend wallpaper discovery with download and one-click offline save/use.
+- Consume validated data-only feature settings, first-install defaults, support links and dismissible announcements.
+- Add native MV3 wallpaper tests, updated privacy disclosures and the 2.4.0 store package.
+
 ## [2.3.0] — 2026-10-13
 
 - Scale actual widget text, shortcut icons and search controls during resizing; fit long content and add per-widget content scale.

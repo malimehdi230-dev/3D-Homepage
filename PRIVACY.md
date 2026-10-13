@@ -1,6 +1,6 @@
 # 3D Parallax privacy policy
 
-Last updated: October 13, 2026. Extension version: 2.3.0. Publisher: Muhammad Ali Mehdi.
+Last updated: October 13, 2026. Extension version: 2.4.0. Publisher: Muhammad Ali Mehdi.
 
 ## What the extension does
 
@@ -8,12 +8,14 @@ Last updated: October 13, 2026. Extension version: 2.3.0. Publisher: Muhammad Al
 
 ## Data kept on your device
 
-Your display name, theme, shortcuts, layout, headlines, tasks, notes, sound preferences, your selected weather city and its coordinates, searches made in the centered homepage search box, and configured AI provider keys are saved locally. Settings use localStorage and chrome.storage.local; uploaded wallpaper files and a setup restore copy use IndexedDB. These are not automatically uploaded to the developer. AI chat messages are held in the current page session and sent to your chosen provider when you use chat.
+Your display name, theme, shortcuts, layout, headlines, tasks, notes, sound preferences, your selected weather city and its coordinates, searches made in the centered homepage search box, and configured AI provider keys are saved locally. Settings use localStorage and chrome.storage.local; up to five saved wallpaper files and a setup restore copy use IndexedDB. These are not automatically uploaded to the developer. AI chat messages are held in the current page session and sent to your chosen provider when you use chat.
 
 The storage permission saves preferences and provider keys. unlimitedStorage allows large image and video wallpapers to remain on your device. The extension does not request access to your browser history, other tabs, or the content of pages you browse.
 
 ## Optional network features
 
+- The homepage fetches public extension settings from the developer’s Vercel backend at startup. The settings contain feature availability, recommended first-install themes, support links and dismissible announcements. No personal settings, notes, wallpaper files or provider keys are sent in that request. The last valid response is used offline for up to one day.
+- Opening the wallpaper library sends your wallpaper search text, category and page selection to the developer’s backend. Supabase stores the developer-published catalog and artwork. Loading previews, downloading, or saving a library wallpaper contacts its Supabase file host. Saving a wallpaper retains a local copy for offline use; your personal uploads remain local. End users do not need a Supabase account. The publisher dashboard uses Supabase Auth, and publisher uploads and metadata are stored in Supabase.
 - Weather is off until you choose a city and enable it. City search sends the city name you enter to Open-Meteo’s geocoding service. Selecting a result saves that city and its coordinates on this device; the city coordinates go directly to Open-Meteo for a forecast. The extension does not access your device location. Weather results are cached for up to 30 minutes. Disable weather in Settings → General to stop forecast requests.
 - AI features use a provider you configure. Chat, headline generation, AI styling, provider tests and model discovery send your API key and the relevant request to that provider. Chat includes recent messages; styling includes your prompt. Provider usage charges and privacy terms apply. Ordinary homepage features do not require an API key.
 - If you enable AI web search, DuckDuckGo and Wikipedia receive the search query, and returned information can be included in the request to your AI provider.
