@@ -1,5 +1,7 @@
 ## Chrome extension 2.5.0
 
+The public [3D Parallax website](https://3dparallax.app) introduces the extension with feature previews, installation information, help, release notes and privacy. Its install buttons use the Chrome Web Store URL set in the publisher dashboard. See [website setup](website/README.md) and [search setup](website/SEO-SETUP.md). The website builds separately from the extension, so the existing Chrome upload ZIP is unchanged.
+
 The extension in [custom extension](custom%20extension) has a balanced centered layout, compact settings, five saved wallpapers with theme switching, and a dynamic Supabase wallpaper library. Version 2.5 adds a polished feedback form with saved drafts and safe retries, connected to a private publisher inbox for systematic triage. Widget content scales with resizing, and the Chrome upload package keeps all executable assets bundled. See [release notes](custom%20extension/RELEASE.md), the [backend setup](https://github.com/malimehdi230-dev/3D-Parallax-backend), and the [Chrome Web Store kit](store-kit/README.md).
 
 # 🎮 3D Homepage - Chrome Extension

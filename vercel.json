@@ -1,0 +1,96 @@
+{
+  "buildCommand": "node scripts/build-website.cjs",
+  "outputDirectory": "website-dist",
+  "installCommand": "",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/install.html",
+      "destination": "/install",
+      "permanent": true
+    },
+    {
+      "source": "/help.html",
+      "destination": "/help",
+      "permanent": true
+    },
+    {
+      "source": "/changelog.html",
+      "destination": "/changelog",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/site-config",
+      "destination": "https://3-d-parallax-backend.vercel.app/api/config"
+    },
+    {
+      "source": "/install",
+      "destination": "/install.html"
+    },
+    {
+      "source": "/help",
+      "destination": "/help.html"
+    },
+    {
+      "source": "/changelog",
+      "destination": "/changelog.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'sha256-OTOWydedykuTenJChweNoUJMJ3uKlGFVg9l5ItAmM6g='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https:; media-src 'self' https: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        }
+      ]
+    },
+    {
+      "source": "/demo/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ]
+}

@@ -1,10 +1,13 @@
 {
   "name": "3d-parallax-extension-tests",
   "private": true,
+  "engines": {"node": "24.x"},
   "scripts": {
     "test": "node tests/ui.cjs && node tests/resize.cjs && node tests/extension.cjs && node tests/backgrounds.cjs",
     "store-assets": "node scripts/store-assets.cjs",
-    "package": "python scripts/package-extension.py"
+    "package": "python scripts/package-extension.py",
+    "build:website": "node scripts/build-website.cjs",
+    "test:website": "node tests/website.cjs"
   },
   "devDependencies": {
     "playwright": "1.64.0"
