@@ -17,7 +17,8 @@ The library, feedback and publisher settings stay in the existing Supabase proje
 - Each public page has a distinct title, description, canonical URL and crawlable content without JavaScript.
 - Open Graph and Twitter metadata use a real prepared promotional image.
 - The home page includes WebSite and SoftwareApplication structured data with verified product facts. It includes no invented ratings/reviews and makes no promise of rich-result eligibility.
-- `/sitemap.xml` lists the five public pages. `/robots.txt` points to the sitemap and keeps the browser demo and configuration API out of crawling.
+- `/sitemap.xml` lists the five public pages. `/robots.txt` points to the sitemap and allows crawling so Google can read the demo/API/manifest `noindex` headers. These URLs stay outside the sitemap.
+- `search-verification.json` keeps the owner's Google Search Console verification tokens. Builds place their meta tags directly in each page's HTML head, without JavaScript or an extra request. Keep verified owners' tokens when updating this file.
 - The optional `/demo/index.html` retains the working new-tab app. It has noindex metadata and headers; it is separate from the marketing home page.
 - Screenshots have descriptive alternatives, fixed dimensions, high-priority loading for the hero and lazy loading below the fold. Fonts and assets are local.
 - `/privacy.html` preserves the extension policy and explains the public website and optional browser demo.
