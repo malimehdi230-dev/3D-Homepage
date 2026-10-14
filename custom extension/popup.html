@@ -1,319 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Parallax</title>
-<link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="ui.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root {
-            --primary: #00ff88;
-            --secondary: #00d4ff;
-            --accent: #bf00ff;
-            --bg: #0a0a0f;
-            --bg2: #0d1117;
-            --surface: rgba(255,255,255,0.04);
-            --border: rgba(255,255,255,0.10);
-            --text: rgba(255,255,255,0.90);
-            --muted: rgba(255,255,255,0.45);
-        }
-
-        body {
-            width: 340px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            overflow: hidden;
-        }
-
-        /* ── Header ── */
-        .popup-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 16px 10px;
-            border-bottom: 1px solid var(--border);
-            background: linear-gradient(135deg, rgba(0,255,136,0.04), rgba(0,212,255,0.04));
-        }
-        .popup-logo {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            flex: 1;
-        }
-        .popup-version {
-            font-size: 0.68rem;
-            color: var(--muted);
-            background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border);
-            padding: 2px 7px;
-            border-radius: 20px;
-        }
-
-        /* ── Greeting ── */
-        .popup-greeting {
-            padding: 14px 16px 0;
-            font-size: 0.82rem;
-            color: var(--muted);
-        }
-        .popup-greeting strong { color: var(--text); }
-
-        /* ── Stats row ── */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 12px 16px;
-        }
-        .stat-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 8px;
-            text-align: center;
-        }
-        .stat-val {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--primary);
-            line-height: 1;
-        }
-        .stat-lbl {
-            font-size: 0.63rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 4px;
-        }
-
-        /* ── Active template ── */
-        .section-label {
-            font-size: 0.68rem;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 0 16px;
-            margin-bottom: 6px;
-        }
-        .template-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0 16px 12px;
-            padding: 10px 12px;
-            background: rgba(0,255,136,0.07);
-            border: 1px solid rgba(0,255,136,0.25);
-            border-radius: 10px;
-        }
-        .tmpl-icon {
-            width: 38px; height: 38px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            font-size: 1.2rem;
-            color: var(--primary);
-            flex-shrink: 0;
-        }
-        .tmpl-name { font-weight: 600; font-size: 0.9rem; }
-        .tmpl-desc { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
-
-        /* ── Quick Links ── */
-        .links-scroll {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            padding: 0 16px 12px;
-            max-height: 88px;
-            overflow-y: auto;
-        }
-        .ql-chip {
-            display: flex; align-items: center; gap: 5px;
-            padding: 5px 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 0.73rem;
-            color: var(--text);
-            text-decoration: none;
-            transition: border-color 0.2s;
-        }
-        .ql-chip:hover { border-color: var(--primary); color: var(--primary); }
-        .ql-chip i { font-size: 0.75rem; }
-
-        /* ── Quick Actions ── */
-        .actions-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            padding: 0 16px 12px;
-        }
-        .action-btn {
-            display: flex; align-items: center; justify-content: center; gap: 7px;
-            padding: 10px 0;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: #0a0a0f;
-            border-color: transparent;
-            grid-column: span 2;
-        }
-        .action-btn.primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .action-btn.ghost {
-            background: var(--surface);
-            color: var(--text);
-        }
-        .action-btn.ghost:hover { border-color: var(--primary); color: var(--primary); }
-        .action-btn.danger { background: rgba(255,77,77,0.08); color: #ff4d4d; border-color: rgba(255,77,77,0.2); }
-        .action-btn.danger:hover { background: rgba(255,77,77,0.15); }
-
-        /* ── Divider ── */
-        hr.popup-divider { border: none; border-top: 1px solid var(--border); margin: 0 16px 10px; }
-
-        /* ── Toggle rows ── */
-        .toggle-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 7px 16px;
-            font-size: 0.82rem;
-            color: var(--text);
-        }
-        .toggle-row span { display: flex; align-items: center; gap: 7px; color: var(--muted); }
-        .toggle-row span i { color: var(--primary); width: 14px; }
-        .toggle {
-            position: relative; width: 36px; height: 20px; flex-shrink: 0;
-        }
-        .toggle input { opacity: 0; width: 0; height: 0; }
-        .toggle-track {
-            position: absolute; inset: 0;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background 0.25s;
-        }
-        .toggle-track::after {
-            content: '';
-            position: absolute;
-            left: 3px; top: 3px;
-            width: 14px; height: 14px;
-            background: #fff;
-            border-radius: 50%;
-            transition: transform 0.25s;
-        }
-        .toggle input:checked + .toggle-track { background: var(--primary); }
-        .toggle input:checked + .toggle-track::after { transform: translateX(16px); }
-
-        /* ── Footer ── */
-        .popup-footer {
-            padding: 10px 16px 14px;
-            border-top: 1px solid var(--border);
-            text-align: center;
-            font-size: 0.7rem;
-            color: var(--muted);
-        }
-        .popup-footer a { color: var(--primary); text-decoration: none; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>3D Parallax</title>
+  <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <!-- Header -->
-    <div class="popup-header">
-        <div class="popup-logo"><i class="fas fa-cube"></i> 3D Parallax</div>
-        <div class="popup-version">v2.4.0</div>
+  <header class="popup-header">
+    <img src="icons/icon32.png" width="32" height="32" alt="">
+    <strong>3D Parallax</strong><span class="popup-version" id="popupVersion"></span>
+  </header>
+  <main>
+    <p class="popup-greeting"><span id="popupGreetingText">Hello, </span><strong id="popupName">there</strong></p>
+    <div class="stats-row" aria-label="Your homepage">
+      <div class="stat-card"><span class="stat-val" id="statLinks">—</span><span class="stat-lbl">Links</span></div>
+      <div class="stat-card"><span class="stat-val" id="statTemplates">—</span><span class="stat-lbl">Themes</span></div>
+      <div class="stat-card"><span class="stat-val" id="statDays">—</span><span class="stat-lbl">Days</span></div>
     </div>
-
-    <!-- Greeting -->
-    <div class="popup-greeting" id="popupGreeting">Good evening, <strong id="popupName">—</strong></div>
-
-    <!-- Stats -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-val" id="statLinks">—</div>
-            <div class="stat-lbl">Links</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-val" id="statTemplates">18</div>
-            <div class="stat-lbl">Templates</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-val" id="statDays">—</div>
-            <div class="stat-lbl">Days</div>
-        </div>
+    <h2 class="section-label" id="backgroundLabel">Current background</h2>
+    <button type="button" class="template-row" id="backgroundBtn" title="Change your background">
+      <span class="tmpl-icon" id="tmplIcon" aria-hidden="true"></span>
+      <span class="background-copy"><strong id="tmplName">Loading…</strong><span id="tmplDesc"></span><small id="wallpaperCount"></small></span>
+      <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    </button>
+    <h2 class="section-label">Quick links</h2><div class="links-scroll" id="quickLinks"></div>
+    <div class="preferences">
+      <label class="toggle-row" for="toggleMatrix"><span><i class="fas fa-terminal" aria-hidden="true"></i> Matrix rain</span><input type="checkbox" id="toggleMatrix" role="switch"><span class="toggle-track" aria-hidden="true"></span></label>
+      <div class="toggle-row"><span><i class="fas fa-music" aria-hidden="true"></i> Ambient sound</span><button type="button" class="small-button" id="ambientBtn">Choose sound</button></div>
+      <div class="toggle-row"><span><i class="fas fa-table-cells" aria-hidden="true"></i> <span id="layoutSummary">Layout</span></span><button type="button" class="small-button" id="layoutBtn">Edit layout</button></div>
     </div>
-
-    <!-- Active Template -->
-    <div class="section-label">Active Template</div>
-    <div class="template-row">
-        <div class="tmpl-icon" id="tmplIcon"><i class="fas fa-code"></i></div>
-        <div>
-            <div class="tmpl-name" id="tmplName">Programmer</div>
-            <div class="tmpl-desc" id="tmplDesc">For developers &amp; coders</div>
-        </div>
-    </div>
-
-    <!-- Quick Links -->
-    <div class="section-label">Quick Links</div>
-    <div class="links-scroll" id="quickLinks">
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.3);padding:4px 0;">No links saved yet.</div>
-    </div>
-
-    <hr class="popup-divider">
-
-    <!-- Toggle rows -->
-    <div class="toggle-row">
-        <span><i class="fas fa-terminal"></i> Matrix rain</span>
-        <label class="toggle">
-            <input type="checkbox" id="toggleMatrix" checked aria-label="Matrix rain">
-            <div class="toggle-track"></div>
-        </label>
-    </div>
-    <div class="toggle-row">
-        <span><i class="fas fa-music"></i> Ambient sound</span>
-        <button type="button" class="action-btn ghost" id="ambientBtn">Choose sound</button>
-    </div>
-
-    <hr class="popup-divider">
-
-    <!-- Actions -->
+    <p id="popupStatus" role="status"></p>
+  </main>
+  <div class="popup-actions">
+    <button type="button" class="primary-button" id="openNewTab"><i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i> Open Homepage</button>
     <div class="actions-grid">
-        <a class="action-btn primary" id="openNewTab" href="index.html" target="_blank">
-            <i class="fas fa-external-link-alt"></i> Open Homepage
-        </a>
-        <button class="action-btn ghost" id="exportBtn">
-            <i class="fas fa-download"></i> Export
-        </button>
-        <button class="action-btn danger" id="resetBtn">
-            <i class="fas fa-undo"></i> Reset
-        </button>
+      <button type="button" id="popupSettingsBtn"><i class="fas fa-sliders" aria-hidden="true"></i> Settings</button>
+      <button type="button" id="exportBtn"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
+      <button type="button" id="resetBtn"><i class="fas fa-rotate-left" aria-hidden="true"></i> Reset</button>
     </div>
-
-    <!-- Footer -->
-    <div class="popup-footer">
-        Made with <i class="fas fa-heart" style="color:#ff4d4d;"></i> by
-        <a href="https://github.com/malimehdi230-dev" target="_blank" rel="noopener">Muhammad Ali Mehdi</a>
-        &nbsp;·&nbsp;
-        <a href="#" id="popupFeedbackLink" title="Send feedback">
-            <i class="fas fa-comment-dots"></i> Feedback
-        </a>
-    </div>
-
-    <script src="popup.js"></script>
+  </div>
+  <footer><a href="https://3dparallax.app" target="_blank" rel="noopener noreferrer">3dparallax.app</a><a href="https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn/reviews" id="popupFeedbackLink" target="_blank" rel="noopener noreferrer"><i class="fas fa-star" aria-hidden="true"></i> Feedback &amp; rating</a></footer>
+  <script src="extension-links.js"></script>
+  <script src="templates.js"></script>
+  <script src="wallpaper.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>

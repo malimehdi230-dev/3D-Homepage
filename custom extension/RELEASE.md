@@ -1,4 +1,14 @@
-# 3D Parallax 2.5.0
+# 3D Parallax 2.6.0
+
+The Chrome toolbar popup now reflects your saved homepage name, shortcuts, theme, active photo or video wallpaper, wallpaper count, ambient sound and layout. It refreshes when another homepage tab changes preferences, uses the shared theme catalog and reads the actual installed version. A compact, keyboard-accessible interface keeps homepage, settings, backup and reset actions within reach. Matrix rain changes apply to open homepage tabs.
+
+Feedback opens the published extension's Chrome Web Store reviews page. Settings → Backup & help → Report a problem keeps private bug reports and feature suggestions connected to the existing publisher inbox. Public reviews remain available when the private feedback service is disabled. The Settings → AI features provider controls include Get Groq API, which opens Groq's official API key page.
+
+The layered-P brand mark replaces the old cube in the installed toolbar icons, extension management icons, popup and homepage loading screen. New tab pages use the same bundled favicon. No new permissions, remotely executable code or analytics are added. Existing settings, provider keys and saved wallpapers are retained; no reset is needed.
+
+Run `npm test` for the UI, resizing, native MV3, wallpapers and new popup regression suite. Run `npm run build:website` and `npm run test:website` for the public website and browser demo. `python scripts/package-extension.py` creates `dist/3D-Parallax-2.6.0.zip`. Follow [the existing-listing update guide](../store-kit/UPDATE-2.6.0.md) to upload it to the live store item. The Chrome Web Store listing icon must also be replaced with `store-kit/assets/icon128.png`.
+
+## Previous release: 2.5.0
 
 Feedback now reaches a private, persistent Supabase inbox in the publisher dashboard. Publishers can search/filter messages, assign priorities, keep private notes, track New/In progress/Resolved/Archived, resolve or archive a selection, and permanently delete a message. Optional email notification failures do not lose saved feedback. Earlier email-only submissions remain in the developer's email inbox.
 

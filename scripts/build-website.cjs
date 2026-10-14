@@ -1,4 +1,4 @@
-// Build the public website separately from the unchanged Chrome extension.
+// Build the public website and a demo of the packaged Chrome extension.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const repo=path.resolve(__dirname,'..'),source=path.join(repo,'website'),output=path.join(repo,'website-dist'),extension=path.join(repo,'custom extension');
 const version=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json'),'utf8')).version;
@@ -42,7 +42,7 @@ fs.writeFileSync(path.join(output,'sitemap.xml'),'<?xml version="1.0" encoding="
 fs.writeFileSync(path.join(output,'robots.txt'),'User-agent: *\nAllow: /\nSitemap: https://3dparallax.app/sitemap.xml\n');
 // Keep existing public asset URLs and offer a functional browser demo while the
 // website gets its own homepage. Only bundled runtime files enter the demo.
-const runtime=['manifest.json','index.html','popup.html','privacy.html','styles.css','ui.css','preferences.js','ui.js','script.js','templates.js','widgets.js','weather.js','wallpaper.js','backgrounds.js','ai-providers.js','ambient.js','setup.js','makeover.js','sharing.js','interactions.js','feedback.js','popup.js','models.json'];
+const runtime=['manifest.json','index.html','popup.html','popup.css','extension-links.js','privacy.html','styles.css','ui.css','preferences.js','ui.js','script.js','templates.js','widgets.js','weather.js','wallpaper.js','backgrounds.js','ai-providers.js','ambient.js','setup.js','makeover.js','sharing.js','interactions.js','feedback.js','popup.js','models.json'];
 const demo=path.join(output,'demo');fs.mkdirSync(demo,{recursive:true});
 for(const name of runtime){let content=fs.readFileSync(path.join(extension,name));if(name==='index.html')content=Buffer.from(content.toString().replace('<title>3D Parallax | Developed by Muhammad Ali Mehdi</title>','<title>3D Parallax Live Demo</title><meta name="robots" content="noindex,follow"><link rel="canonical" href="https://3dparallax.app/">'));fs.writeFileSync(path.join(demo,name),content);}
 for(const folder of ['icons','vendor'])fs.cpSync(path.join(extension,folder),path.join(demo,folder),{recursive:true});
@@ -55,4 +55,4 @@ const deploy={
 };
 if(process.argv.includes('--configure'))fs.writeFileSync(path.join(repo,'vercel.json'),JSON.stringify(deploy,null,2)+'\n');
 else {const current=JSON.parse(fs.readFileSync(path.join(repo,'vercel.json'),'utf8'));if(JSON.stringify(current)!==JSON.stringify(deploy))throw new Error('Deployment configuration changed. Run node scripts/build-website.cjs --configure and review vercel.json.');}
-console.log(`Built five indexable pages, public SEO files, social previews and browser demo. Extension ${version} is unchanged.`);
+console.log(`Built five indexable pages, public SEO files, social previews and browser demo for extension ${version}.`);

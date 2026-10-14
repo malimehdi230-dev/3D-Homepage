@@ -1,4 +1,4 @@
-# Chrome Web Store listing — 2.5.0
+# Chrome Web Store listing — 2.6.0
 
 Name: **3D Parallax**
 

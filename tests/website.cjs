@@ -70,6 +70,11 @@ const repo=path.resolve(__dirname,'..'),root=path.join(repo,'website-dist'),arti
     const sitemap=await (await page.request.get(base+'/sitemap.xml')).text();assert.equal((sitemap.match(/<loc>/g)||[]).length,5);assert.ok(!sitemap.includes('demo'));
     const missing=await page.goto(base+'/missing-page');assert.equal(missing.status(),404);assert.equal(await page.locator('meta[name=robots]').getAttribute('content'),'noindex,follow');
     await page.goto(base+'/demo/index.html');await page.waitForFunction(()=>window.app&&window.HomepageUI);await page.locator('#loadingScreen').waitFor({state:'hidden'});assert.equal(await page.locator('meta[name=robots]').getAttribute('content'),'noindex,follow');assert.equal(await page.locator('#settingsBtn').isVisible(),true);
+    await page.evaluate(()=>HomepageUI.openSettings('ai'));assert.equal(await page.locator('#getGroqApiLink').getAttribute('href'),'https://console.groq.com/keys');
+    const version=JSON.parse(fs.readFileSync(path.join(repo,'custom extension/manifest.json'),'utf8')).version;
+    await page.waitForFunction(version=>document.getElementById('settingsVersion').textContent==='3D Parallax v'+version,version);
+    await page.goto(base+'/demo/popup.html');await page.waitForFunction(version=>document.getElementById('popupVersion').textContent==='v'+version&&document.getElementById('tmplName').textContent!=='Loading…',version);
+    assert.equal(await page.locator('#statTemplates').textContent(),'18');assert.equal(await page.locator('#popupFeedbackLink').getAttribute('href'),'https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn/reviews');
     assert.deepEqual(errors,[]);assert.deepEqual(violations,[]);
     console.log('PASS: admin config → durable API fixture → website install links, release states, safe URLs, crawled HTML/SEO/social metadata, FAQ/mobile navigation, 320–1440px layouts, 404 and working demo/CSP. No production settings or emails changed.');
   }finally{await browser.close();server.close();}

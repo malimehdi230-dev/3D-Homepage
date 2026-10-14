@@ -6,7 +6,7 @@ A new brand mark for 3D Parallax: three overlapping planes create a bold P and s
 
 `logo-master.png` is the original high-resolution generated artwork. `logo-1024.png` and `logo-512.png` are larger exports. `icon16.png`, `icon32.png`, `icon48.png` and `icon128.png` are PNG exports for extension usage. The 128px export fits the artwork inside a centered 96px square, with at least 16px transparent padding on every side, following [Chrome's icon guidance](https://developer.chrome.com/docs/webstore/images).
 
-The public website now uses this logo in its header, footer, favicon, social preview and software structured data. The submitted 2.5.0 extension ZIP and its bundled icons are unchanged. A future extension release can copy the appropriate files into `custom extension/icons`, retain the existing manifest paths, increment the manifest version, and build a new upload ZIP. Use the same icon on the store listing when adopting the branding there.
+The public website uses this logo in its header, footer, favicon, social preview and software structured data. Extension 2.6.0 adopts the same exports in `custom extension/icons`, including a 32px toolbar variant, and displays the brand mark in its popup and loading screen. Earlier 2.5.0 ZIPs remain unchanged. Upload `store-kit/assets/icon128.png` as the Chrome Web Store listing icon along with the 2.6.0 package. Chrome displays the new installed icon after that release is published and the extension updates.
 
 Exports preserve the original artwork and alpha; they only normalize padding and scale the raster. They are not editable vector files. Small versions use the same recognizable silhouette.
 

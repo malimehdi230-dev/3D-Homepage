@@ -20,8 +20,9 @@ class FeedbackModule {
       <div id="feedbackFooter"><span id="feedbackStatus" role="status" aria-live="polite"></span><button id="feedbackSubmit"><i class="fas fa-paper-plane" aria-hidden="true"></i> Send feedback</button></div>
     </div>`;
     overlay.addEventListener('click',event=>{if(event.target===overlay)this.close();});document.body.append(overlay);this.modal=overlay;
-    const trigger=document.createElement('button');trigger.id='feedbackTriggerBtn';trigger.innerHTML='<i class="fas fa-comment-dots" aria-hidden="true"></i><span>Feedback</span>';trigger.setAttribute('aria-label','Share feedback');trigger.title='Share feedback (F)';trigger.onclick=()=>this.open();document.body.append(trigger);
-    document.getElementById('settingsFeedbackBtn')?.addEventListener('click',()=>{document.getElementById('settingsModal')?.classList.remove('active');setTimeout(()=>this.open(),150);});
+    const trigger=document.createElement('button');trigger.id='feedbackTriggerBtn';trigger.innerHTML='<i class="fas fa-comment-dots" aria-hidden="true"></i><span>Feedback</span>';trigger.setAttribute('aria-label','Feedback and rating on Chrome Web Store');trigger.title='Open Chrome Web Store reviews (F)';trigger.onclick=()=>openExtensionReviews();document.body.append(trigger);
+    document.getElementById('settingsFeedbackBtn')?.addEventListener('click',()=>openExtensionReviews());
+    document.getElementById('settingsReportProblemBtn')?.addEventListener('click',()=>{document.getElementById('settingsModal')?.classList.remove('active');queueMicrotask(()=>this.open());});
     document.getElementById('feedbackClose').onclick=()=>this.close();
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&this.isOpen)this.close();if(this.isOpen&&(event.ctrlKey||event.metaKey)&&event.key==='Enter'){event.preventDefault();this._submit();}});
     document.getElementById('feedbackTypes').onclick=event=>{const button=event.target.closest('[data-type]');if(!button||this._sending||this._sent)return;this._chooseType(button.dataset.type);this._changed();};
@@ -53,9 +54,10 @@ class FeedbackModule {
     if(window.ExtensionService&&!ExtensionService.enabled('feedbackEnabled')){window.toast?.('Feedback is temporarily unavailable. You can use the support link.','info');return;}
     const message=document.getElementById('feedbackMessage').value.trim(),status=document.getElementById('feedbackStatus'),button=document.getElementById('feedbackSubmit');
     if(Array.from(message).length<3){status.textContent='Please write at least 3 characters.';status.classList.add('error');document.getElementById('feedbackMessage').focus();return;}
-    this._payload||={submission_id:crypto.randomUUID(),message,type:document.querySelector('.fb-type-btn.active').dataset.type,rating:this._rating,theme:document.body.dataset.template||localStorage.getItem('homepage_template')||'unknown',version:globalThis.chrome?.runtime?.getManifest?.()?.version||'2.5.0',timestamp:new Date().toISOString()};
-    this._saveDraft();this._sending=true;this._lock(true);button.disabled=true;button.innerHTML='<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Sending…';status.textContent='';status.classList.remove('error');
+    this._sending=true;this._lock(true);button.disabled=true;button.innerHTML='<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Sending…';status.textContent='';status.classList.remove('error');
     try{
+      this._payload||={submission_id:crypto.randomUUID(),message,type:document.querySelector('.fb-type-btn.active').dataset.type,rating:this._rating,theme:document.body.dataset.template||localStorage.getItem('homepage_template')||'unknown',version:await ExtensionVersion||'unknown',timestamp:new Date().toISOString()};
+      this._saveDraft();
       const response=await fetch(FEEDBACK_API,{method:'POST',credentials:'omit',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/json'},body:JSON.stringify(this._payload)});
       if(response.status===429)throw new Error('Please wait a minute before sending again. Your draft is kept.');
       if(response.status===404)throw new Error('The feedback service is unavailable. Your draft is kept.');

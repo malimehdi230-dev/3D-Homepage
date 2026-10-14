@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Parallax | Developed by Muhammad Ali Mehdi</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
 <link rel="stylesheet" href="vendor/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="ui.css">
@@ -15,7 +16,7 @@
     <!-- Loading Screen -->
     <div id="loadingScreen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
         <div style="font-family:var(--font-ui);font-size:2rem;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-            <i class="fas fa-cube" style="-webkit-text-fill-color:var(--primary);"></i> 3D Parallax
+            <img src="icons/icon48.png" width="40" height="40" alt="" style="vertical-align:middle;"> 3D Parallax
         </div>
         <div style="width:48px;height:48px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
         <div style="font-family:var(--font-ui);font-size:0.85rem;color:rgba(255,255,255,0.4);">Loading your space…</div>
@@ -146,7 +147,7 @@
                     <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">A</td><td style="color:rgba(255,255,255,0.95);">Toggle Ask AI chat</td></tr>
                     <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">C</td><td style="color:rgba(255,255,255,0.95);">Toggle Customization mode</td></tr>
                     <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">?</td><td style="color:rgba(255,255,255,0.95);">Toggle this overlay</td></tr>
-                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">F</td><td style="color:rgba(255,255,255,0.95);">Open Feedback modal</td></tr>
+                    <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">F</td><td style="color:rgba(255,255,255,0.95);">Open Chrome Web Store reviews</td></tr>
                     <tr><td style="padding:8px 0;color:rgba(255,255,255,0.6);">Escape</td><td style="color:rgba(255,255,255,0.95);">Close any open panel</td></tr>
                 </tbody>
             </table>
@@ -350,7 +351,10 @@
                     <span class="settings-section-ttl">
                         <i class="fas fa-key" style="color:var(--primary)"></i> Connected providers
                     </span>
-                    <div class="btn-group">
+                    <div class="btn-group provider-actions">
+                        <a class="btn btn-secondary btn-sm" id="getGroqApiLink" href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i> Get Groq API
+                        </a>
                         <button type="button" class="btn btn-secondary btn-sm" id="showSnippetBtn">
                             <i class="fas fa-code"></i> Import snippet
                         </button>
@@ -610,18 +614,21 @@
                 <div class="settings-section-hdr">
                     <span class="settings-section-ttl">
                         <i class="fas fa-comment-dots" style="color:var(--primary)"></i>
-                        Send Feedback
+                        Feedback &amp; support
                     </span>
                 </div>
-                <p class="settings-section-desc">Love something? Found a bug? Have an idea? Your feedback directly shapes the next version of 3D Parallax.</p>
+                <p class="settings-section-desc">Leave a public review on the Chrome Web Store, or send a problem or suggestion privately to the developer.</p>
                 <button type="button" class="btn btn-secondary" id="settingsFeedbackBtn" style="width:100%;">
-                    <i class="fas fa-paper-plane"></i> Open Feedback Form
+                    <i class="fas fa-star" aria-hidden="true"></i> Rate on Chrome Web Store
+                </button>
+                <button type="button" class="btn btn-secondary" id="settingsReportProblemBtn" style="width:100%;margin-top:var(--sp-2);">
+                    <i class="fas fa-comment-dots" aria-hidden="true"></i> Report a problem
                 </button>
             </div>
 
             <!-- Footer -->
             <div class="settings-footer">
-                <p>3D Parallax v2.4.0</p>
+                <p id="settingsVersion">3D Parallax</p>
                 <p style="color:var(--primary);">Developed by Muhammad Ali Mehdi</p>
             </div>
         </div>
@@ -681,6 +688,7 @@
     <input type="file" id="importFilePicker" accept=".json" style="display:none;">
 
     <!-- Scripts -->
+    <script src="extension-links.js"></script>
     <script src="ai-providers.js"></script>
     <script src="wallpaper.js"></script>
 

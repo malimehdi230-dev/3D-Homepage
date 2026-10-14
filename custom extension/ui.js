@@ -284,9 +284,10 @@ const HomepageUI = (() => {
       if (event.key === 'homepage_userName' && event.newValue) window.app.updateUserName(event.newValue);
     });
     new MutationObserver(applyEffects).observe(document.body,{attributes:true,attributeFilter:['class']});
-    if (location.hash === '#backup' || location.hash === '#reset' || location.hash === '#sound') {
+    if (['#backup','#reset','#sound','#settings','#layout','#background'].includes(location.hash)) {
       const hash = location.hash;
-      openSettings(hash === '#sound' ? 'appearance' : 'data');
+      if (hash === '#background') setTimeout(() => window.BackgroundPicker.open(localStorage.getItem('homepage_background_mode') === 'wallpaper' ? 'saved' : 'themes'),0);
+      else openSettings(({ '#sound':'appearance', '#settings':'general', '#layout':'layout' })[hash] || 'data');
       if (hash === '#reset') openReset();
       if (hash === '#sound') document.getElementById('soundOptions').scrollIntoView({ block: 'nearest' });
       history.replaceState(null, '', location.pathname);

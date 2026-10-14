@@ -1,6 +1,8 @@
-# Chrome Web Store privacy form — 3D Parallax 2.5.0
+# Chrome Web Store privacy form — 3D Parallax 2.6.0
 
 Checked against the bundled extension's manifest, storage, wallpaper, network and interaction code on October 14, 2026. Each paste-ready justification is below the form's 1,000-character limit.
+
+Version 2.6.0 adds no permissions. Feedback and rating controls open the public Chrome Web Store reviews page; Settings → Backup & help → Report a problem retains the private developer inbox described below. Get Groq API opens Groq's official key console. No locally saved API key is included in either outgoing link.
 
 ## Single purpose description
 

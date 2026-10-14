@@ -1,133 +1,103 @@
-function _esc(s) {
-    return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
+/* The homepage's local preferences are authoritative; Chrome storage is only
+   a fallback for older installations. Never read provider keys in this view. */
 document.addEventListener('DOMContentLoaded', () => {
-    const TEMPLATES = {
-        programmer:  { name: 'Programmer',      desc: 'For developers & coders',     icon: 'fa-code',        primary: '#00ff88', secondary: '#00d4ff' },
-        gamer:       { name: 'Gamer',            desc: 'For gaming enthusiasts',       icon: 'fa-gamepad',     primary: '#ff0055', secondary: '#00ffff' },
-        anime:       { name: 'Anime',            desc: 'For anime & manga lovers',     icon: 'fa-star',        primary: '#ff6b9d', secondary: '#c77dff' },
-        creator:     { name: 'Digital Creator',  desc: 'For artists & creators',       icon: 'fa-palette',     primary: '#ff7b00', secondary: '#ff00d4' },
-        aiDev:       { name: 'AI Developer',     desc: 'For AI & ML engineers',        icon: 'fa-robot',       primary: '#00d4ff', secondary: '#7b2fff' },
-        cyberpunk:   { name: 'Cyberpunk',        desc: 'Futuristic neon vibes',        icon: 'fa-microchip',   primary: '#ff00ff', secondary: '#00ffff' },
-        minimal:     { name: 'Minimal Dark',     desc: 'Clean & focused',              icon: 'fa-moon',        primary: '#ffffff', secondary: '#888888' },
-        retro:       { name: 'Retro Gaming',     desc: '80s arcade vibes',             icon: 'fa-ghost',       primary: '#ff6b35', secondary: '#f7c948' },
-        space:       { name: 'Space Explorer',   desc: 'Cosmic adventures',            icon: 'fa-rocket',      primary: '#7b2fff', secondary: '#00d4ff' },
-        music:       { name: 'Music Producer',   desc: 'For beat makers',              icon: 'fa-headphones',  primary: '#ff4d4d', secondary: '#ff8800' },
-        crypto:      { name: 'Crypto / Web3',    desc: 'Blockchain & DeFi',            icon: 'fa-bitcoin',     primary: '#f7c948', secondary: '#ff6b35' },
-        cyberexpert: { name: 'Cyber Expert',     desc: 'Matrix style',                 icon: 'fa-terminal',    primary: '#00ff88', secondary: '#00cc66' },
-        nature:      { name: 'Zen Coder',        desc: 'Peaceful & calm',              icon: 'fa-leaf',        primary: '#88ff44', secondary: '#44ffcc' },
-        synthwave:   { name: 'Synthwave',        desc: '80s neon aesthetic',           icon: 'fa-sun',         primary: '#ff6ec7', secondary: '#a855f7' },
-        scifi:       { name: 'Sci-Fi Tech',      desc: 'Advanced technology',          icon: 'fa-satellite',   primary: '#00f0ff', secondary: '#0070ff' },
-        liquidGlass: { name: 'Liquid Glass',     desc: 'Apple-inspired glassmorphism', icon: 'fa-droplet',     primary: '#88ccff', secondary: '#ffffff' },
-        diamondCut:  { name: 'Diamond Cut',      desc: 'Premium crystal aesthetic',    icon: 'fa-gem',         primary: '#b3ffff', secondary: '#e6ffff' },
-        holographic: { name: 'Holographic',      desc: 'Iridescent hologram vibes',    icon: 'fa-eye',         primary: '#ff7eb3', secondary: '#ff758c' },
-    };
-
-    function applyData(template, userName, links, installDate) {
-        const current = TEMPLATES[template] || TEMPLATES.programmer;
-
-        // Template card
-        const tmplIcon = document.getElementById('tmplIcon');
-        if (tmplIcon) tmplIcon.innerHTML = `<i class="fas ${_esc(current.icon)}" style="color:${_esc(current.primary)};"></i>`;
-        const tmplName = document.getElementById('tmplName');
-        if (tmplName) tmplName.textContent = current.name;
-        const tmplDesc = document.getElementById('tmplDesc');
-        if (tmplDesc) tmplDesc.textContent = current.desc;
-
-        // Stats
-        const statLinks = document.getElementById('statLinks');
-        if (statLinks) statLinks.textContent = links.length;
-
-        // Days since install
-        const statDays = document.getElementById('statDays');
-        if (statDays && installDate) {
-            const days = Math.max(0, Math.floor((Date.now() - Number(installDate)) / 86400000));
-            statDays.textContent = days;
-        }
-
-        // Greeting
-        const greetEl = document.getElementById('popupGreeting');
-        const nameEl  = document.getElementById('popupName');
-        if (greetEl) {
-            const h = new Date().getHours();
-            const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-            greetEl.innerHTML = `Good ${period}, <strong id="popupName">${_esc((userName && userName !== 'YOUR NAME') ? userName : 'there')}</strong>`;
-        }
-
-        // Quick links chips
-        const linksContainer = document.getElementById('quickLinks');
-        if (linksContainer) {
-            if (!links.length) {
-                linksContainer.innerHTML = '<div style="font-size:0.78rem;color:rgba(255,255,255,0.3);padding:4px 0;">No links saved yet.</div>';
-            } else {
-                linksContainer.innerHTML = links.slice(0, 8).map(link => `
-                    <a href="${/^https?:\/\//i.test(link.url) ? _esc(link.url) : '#'}" class="ql-chip" target="_blank" rel="noopener" title="${_esc(link.name)}">
-                        <i class="${_esc(link.icon)}" style="color:${_esc(link.color || '#00ff88')};"></i>
-                        ${_esc(link.name)}
-                    </a>
-                `).join('') + (links.length > 8 ? `<span class="ql-chip" style="opacity:0.5;">+${links.length - 8} more</span>` : '');
-            }
-        }
+  const keys = ['homepage_template','homepage_userName','homepage_links','homepage_install_date',
+    'homepage_matrixEnabled','homepage_ambient_kind','homepage_ambient_volume','homepage_widget_layout',
+    'homepage_background_mode','homepage_wallpaper_active_id','homepage_setup_theme','homepage_service_config'];
+  const $ = id => document.getElementById(id);
+  let revision = 0, previewUrl, timer;
+  const decode = (value, fallback) => { try { return typeof value === 'string' ? JSON.parse(value) : value ?? fallback; } catch { return fallback; } };
+  const color = value => typeof value === 'string' && /^#[a-f\d]{3}(?:[a-f\d]{3})?$/i.test(value) ? value : null;
+  const enabled = value => ![false,0,'0','false'].includes(value);
+  const url = value => { try { const target = new URL(value); return /^https?:$/.test(target.protocol) ? target.href : null; } catch { return null; } };
+  function cleanPreview() { if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; } }
+  function showIcon(className) {
+    cleanPreview(); $('tmplIcon').replaceChildren();
+    const icon = document.createElement('i'); icon.className = className; icon.setAttribute('aria-hidden','true'); $('tmplIcon').append(icon);
+  }
+  function accent(value) {
+    document.documentElement.style.setProperty('--primary',value);
+    const hex = value.slice(1), full = hex.length === 3 ? [...hex].map(c => c + c).join('') : hex;
+    const [r,g,b] = [0,2,4].map(start => parseInt(full.slice(start,start+2),16) / 255).map(n => n <= .04045 ? n / 12.92 : ((n + .055) / 1.055) ** 2.4);
+    document.documentElement.style.setProperty('--primary-ink', .2126*r + .7152*g + .0722*b > .2 ? '#101815' : '#ffffff');
+  }
+  async function loadData() {
+    const current = ++revision;
+    let mirror = {};
+    try { if (globalThis.chrome?.storage?.local) mirror = await chrome.storage.local.get(keys); } catch {}
+    let wallpapers = [];
+    try { wallpapers = await Wallpaper.list(); } catch { $('popupStatus').textContent = 'Open your homepage to check wallpaper storage.'; }
+    if (current !== revision) return;
+    const read = key => { try { return localStorage.getItem(key) ?? mirror[key] ?? null; } catch { return mirror[key] ?? null; } };
+    const template = TEMPLATES[read('homepage_template')] || TEMPLATES.minimal;
+    const savedName = read('homepage_userName'), hour = new Date().getHours();
+    $('popupGreetingText').textContent = 'Good ' + (hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening') + ', ';
+    $('popupName').textContent = savedName && savedName !== 'YOUR NAME' ? savedName : 'there';
+    const theme = decode(read('homepage_setup_theme'),{});
+    accent(color(theme.accent) || template.colors.primary);
+    const rawLinks = read('homepage_links'), parsed = decode(rawLinks, rawLinks === null ? DEFAULT_LINKS : []);
+    const links = Array.isArray(parsed) ? parsed.filter(link => link && typeof link.name === 'string') : [];
+    $('statLinks').textContent = links.length;
+    $('statTemplates').textContent = Object.keys(TEMPLATES).length;
+    const installed = Number(read('homepage_install_date'));
+    $('statDays').textContent = installed > 0 && Number.isFinite(installed) ? Math.max(0,Math.floor((Date.now()-installed)/86400000)) : '\u2014';
+    const item = wallpapers.find(row => row.id === read('homepage_wallpaper_active_id'));
+    const wallpaperMode = read('homepage_background_mode') === 'wallpaper' && item;
+    $('backgroundLabel').textContent = 'Current background';
+    $('tmplName').textContent = wallpaperMode ? item.name || 'My wallpaper' : template.name;
+    $('tmplDesc').textContent = wallpaperMode
+      ? (item.blob?.type?.startsWith('video/') ? 'Video wallpaper' : 'Photo wallpaper') + ' \u00b7 Theme: ' + template.name
+      : template.description;
+    $('wallpaperCount').textContent = wallpapers.length + ' of ' + Wallpaper.max + ' wallpapers saved';
+    showIcon(wallpaperMode ? 'fas fa-image' : template.icon);
+    if (wallpaperMode && item.blob?.type?.startsWith('image/')) {
+      previewUrl = URL.createObjectURL(item.blob);
+      const image = document.createElement('img'); image.src = previewUrl; image.alt = ''; $('tmplIcon').replaceChildren(image);
     }
-
-    function loadData() {
-        if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
-            chrome.storage.local.get(
-                ['homepage_template', 'homepage_userName', 'homepage_links', 'homepage_install_date'],
-                (result) => {
-                    const template = result.homepage_template || localStorage.getItem('homepage_template') || 'programmer';
-                    const userName = result.homepage_userName || localStorage.getItem('homepage_userName') || '';
-                    let links = [];
-                    try { links = JSON.parse(result.homepage_links || localStorage.getItem('homepage_links') || '[]'); } catch {}
-                    const installDate = result.homepage_install_date || localStorage.getItem('homepage_install_date');
-                    applyData(template, userName, links, installDate);
-                }
-            );
-        } else {
-            const template = localStorage.getItem('homepage_template') || 'programmer';
-            const userName = localStorage.getItem('homepage_userName') || '';
-            let links = [];
-            try { links = JSON.parse(localStorage.getItem('homepage_links') || '[]'); } catch {}
-            const installDate = localStorage.getItem('homepage_install_date');
-            applyData(template, userName, links, installDate);
-        }
+    $('quickLinks').replaceChildren();
+    for (const link of links.slice(0,8)) {
+      const destination = url(link.url), chip = document.createElement(destination ? 'a' : 'span'); chip.className = 'ql-chip';
+      if (destination) { chip.href = destination; chip.target = '_blank'; chip.rel = 'noopener noreferrer'; }
+      const icon = document.createElement('i'); icon.className = typeof link.icon === 'string' ? link.icon : 'fas fa-link'; icon.setAttribute('aria-hidden','true');
+      if (color(link.color)) icon.style.color = link.color;
+      chip.append(icon,document.createTextNode(link.name)); chip.title = link.name; $('quickLinks').append(chip);
     }
-
-    loadData();
-
-    // Toggle: Matrix rain
-    const toggleMatrix = document.getElementById('toggleMatrix');
-    if (toggleMatrix) {
-        const stored = localStorage.getItem('homepage_matrixEnabled');
-        toggleMatrix.checked = stored !== '0';
-        toggleMatrix.addEventListener('change', () => {
-            localStorage.setItem('homepage_matrixEnabled', toggleMatrix.checked ? '1' : '0');
-            if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
-                chrome.storage.local.set({ homepage_matrixEnabled: toggleMatrix.checked ? '1' : '0' });
-            }
-        });
-    }
-
-    function openHomepage(hash = '') {
-        if (typeof chrome !== 'undefined' && chrome.tabs) {
-            chrome.tabs.create({ url: chrome.runtime.getURL('index.html') + hash });
-            window.close();
-        } else window.open('index.html' + hash, '_blank');
-    }
-    document.getElementById('ambientBtn')?.addEventListener('click', () => openHomepage('#sound'));
-    document.getElementById('openNewTab')?.addEventListener('click', e => { e.preventDefault(); openHomepage(); });
-    document.getElementById('exportBtn')?.addEventListener('click', () => openHomepage('#backup'));
-    document.getElementById('resetBtn')?.addEventListener('click', () => openHomepage('#reset'));
-
-    // Feedback link — opens new tab to index.html and triggers the feedback modal
-    const popupFeedbackLink = document.getElementById('popupFeedbackLink');
-    if (popupFeedbackLink) {
-        popupFeedbackLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            chrome.tabs.create({ url: chrome.runtime.getURL('index.html') + '#feedback' });
-        });
-    }
+    if (!links.length) { const note = document.createElement('span'); note.className = 'empty-links'; note.textContent = 'Add your first shortcut on the homepage.'; $('quickLinks').append(note); }
+    if (links.length > 8) { const more = document.createElement('span'); more.className = 'empty-links'; more.textContent = '+' + (links.length-8) + ' more on your homepage'; $('quickLinks').append(more); }
+    $('toggleMatrix').checked = enabled(read('homepage_matrixEnabled'));
+    const ambient = read('homepage_ambient_kind'), volume = read('homepage_ambient_volume');
+    $('ambientBtn').textContent = ({ rain:'Rain', lofi:'Lo-fi' })[ambient] ? ({ rain:'Rain', lofi:'Lo-fi' })[ambient] + (volume !== null && Number(volume) === 0 ? ' (muted)' : '') : 'Choose sound';
+    const config = decode(read('homepage_service_config'),{});
+    const age = Date.now()-Number(config.cachedAt);
+    const ambientAvailable = !(config.schemaVersion === 1 && age >= 0 && age < 86400000 && config.ambientEnabled === false);
+    $('ambientBtn').disabled = !ambientAvailable;
+    if (!ambientAvailable) $('ambientBtn').textContent = 'Unavailable';
+    const layout = decode(read('homepage_widget_layout'),null);
+    $('layoutSummary').textContent = Array.isArray(layout) ? 'Widgets \u00b7 ' + layout.filter(row => row && !row.hidden).length + ' visible' : 'Centered';
+  }
+  const refresh = () => { clearTimeout(timer); timer = setTimeout(loadData,30); };
+  window.addEventListener('storage', event => { if (!event.key || keys.includes(event.key)) refresh(); });
+  globalThis.chrome?.storage?.onChanged?.addListener((changes,area) => { if (area === 'local' && keys.some(key => Object.hasOwn(changes,key))) refresh(); });
+  window.addEventListener('pagehide',cleanPreview);
+  $('toggleMatrix').addEventListener('change', () => {
+    const value = $('toggleMatrix').checked ? '1' : '0';
+    try { localStorage.setItem('homepage_matrixEnabled',value); }
+    catch { $('popupStatus').textContent = 'Could not save this preference. Open settings to try again.'; refresh(); return; }
+    globalThis.chrome?.storage?.local?.set({ homepage_matrixEnabled:value }).catch(() => {});
+  });
+  function openHomepage(hash = '') {
+    if (globalThis.chrome?.tabs?.create) { chrome.tabs.create({ url:chrome.runtime.getURL('index.html') + hash }); window.close(); }
+    else window.open('index.html' + hash,'_blank','noopener,noreferrer');
+  }
+  $('ambientBtn').onclick = () => openHomepage('#sound');
+  $('layoutBtn').onclick = () => openHomepage('#layout');
+  $('backgroundBtn').onclick = () => openHomepage('#background');
+  $('openNewTab').onclick = () => openHomepage();
+  $('popupSettingsBtn').onclick = () => openHomepage('#settings');
+  $('exportBtn').onclick = () => openHomepage('#backup');
+  $('resetBtn').onclick = () => openHomepage('#reset');
+  $('popupFeedbackLink').href = ExtensionLinks.reviews;
+  $('popupFeedbackLink').onclick = event => { event.preventDefault(); openExtensionReviews(); };
+  ExtensionVersion.then(version => { if (version) $('popupVersion').textContent = 'v' + version; });
+  loadData();
 });

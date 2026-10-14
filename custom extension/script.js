@@ -2084,7 +2084,7 @@ class HomepageApp {
                 return;
             }
             if (e.key === 'F' || e.key === 'f') {
-                window.Feedback?.toggle();
+                window.openExtensionReviews?.();
                 return;
             }
         });

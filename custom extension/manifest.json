@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "3D Parallax",
   "short_name": "3D Parallax",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Make each new tab yours with resizable widgets, quick links, 18 themes, custom wallpapers, optional weather and AI tools.",
   "author": "Muhammad Ali Mehdi",
   "homepage_url": "https://3dparallax.app",
@@ -14,13 +14,16 @@
   "host_permissions": [],
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
+    "default_title": "3D Parallax — your homepage",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png"
     }
   },

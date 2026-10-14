@@ -1,6 +1,6 @@
 # 3D Parallax privacy policy
 
-Last updated: October 14, 2026. Extension version: 2.5.0. Publisher: Muhammad Ali Mehdi.
+Last updated: October 14, 2026. Extension version: 2.6.0. Publisher: Muhammad Ali Mehdi.
 
 ## What the extension does
 
@@ -42,6 +42,8 @@ Local data remains until you delete it, reset, or uninstall. Feedback messages a
 
 ## Contact and changes
 
-For support or privacy requests, use Settings → Backup & help → Send Feedback. You can also open an issue at [the public project support page](https://github.com/malimehdi230-dev/3D-Homepage/issues); do not post private information or API keys in a public issue. The publisher's support contact is available in the Chrome Web Store listing when published.
+The Feedback and rating controls open the extension's [Chrome Web Store reviews page](https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn/reviews). Reviews you choose to post there are public and handled by Google. The Get Groq API link opens Groq's API key console, where account information is handled by Groq; opening that link does not send your locally saved keys to the developer.
+
+For private support or privacy requests, use Settings → Backup & help → Report a problem. You can also open an issue at [the public project support page](https://github.com/malimehdi230-dev/3D-Homepage/issues); do not post private information or API keys in a public issue. The publisher's support contact is available in the Chrome Web Store listing.
 
 The extension is not directed at children under 13. Material changes to data handling will be described in this policy and the release notes. The updated date above identifies the current policy.

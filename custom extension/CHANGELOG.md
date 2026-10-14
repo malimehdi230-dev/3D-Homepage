@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.6.0] — 2026-10-14
+
+- Reflect canonical homepage preferences in the toolbar popup, including active wallpapers, saved collection size, links, effects, ambient choice and layout.
+- Share the theme catalog and derive version labels from the manifest; refresh the popup when another extension page changes preferences.
+- Add compact popup controls that open the relevant settings section or background picker.
+- Open Chrome Web Store reviews from Feedback buttons and the F shortcut; retain private reports in Backup & help.
+- Add Get Groq API in provider settings and keep the controls usable on narrow screens.
+- Adopt the layered-P logo in all installed icon sizes, the popup, loading screen and favicon.
+- Add native MV3 popup regression coverage and refreshed listing assets. No permission changes.
+
+## [2.5.0] — 2026-10-13
+
+- Connect submitted feedback to the publisher's private inbox with systematic triage.
+- Keep unsent drafts, allow optional ratings to be cleared, prevent duplicate retries and show submission references.
+
 ## [2.4.0] — 2026-10-13
 
 - Fix centered shortcuts by removing inherited bottom-dock positioning; keep content centered on desktop and mobile.

@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--output', type=Path, default=repo / 'dist' / f"3D-Parallax-{manifest['version']}.zip")
 archive = parser.parse_args().output.resolve()
 files = [root / name for name in [
-    'manifest.json','index.html','popup.html','privacy.html','styles.css','ui.css',
+    'manifest.json','index.html','popup.html','popup.css','privacy.html','styles.css','ui.css','extension-links.js',
     'preferences.js','ui.js','script.js','templates.js','widgets.js','weather.js',
     'wallpaper.js','backgrounds.js','ai-providers.js','ambient.js','setup.js','makeover.js','sharing.js',
     'interactions.js','feedback.js','popup.js','models.json',
