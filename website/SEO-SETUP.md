@@ -8,9 +8,13 @@ The repository includes permanent redirects from `www.3dparallax.app` and the pr
 
 Public page variants such as `/index.html`, `/install.html`, `/privacy` and trailing slashes redirect to their canonical destinations. The sitemap contains only final, public HTTP 200 URLs. Each public page has one absolute self-canonical and matching Open Graph URL. The demo and 404 page no longer declare the unrelated marketing homepage as their canonical; they remain excluded from indexing.
 
-**Complete the DNS delegation at Name.com**
+**DNS delegation corrected at Name.com**
 
-Live checks on October 15 found six authoritative nameservers: Vercel's two nameservers mixed with four Name.com nameservers. Vercel serves the corrected `www` record, while Name.com sometimes returns NXDOMAIN (hostname not found). This inconsistent delegation must be corrected before treating the public hostname repair as complete. The owner confirmed that this domain is used only for this website.
+The owner saved the nameserver correction on October 15. A direct, non-recursive query over TCP to the `.app` registry's authoritative DNS server confirmed that the parent delegation now contains exactly `ns1.vercel-dns.com` and `ns2.vercel-dns.com`. Google's public resolver finds the correct `www` CNAME and addresses. Strict HTTPS checks passed for the homepage and a subpage with a query string: `www` returns HTTP 308 to the matching canonical address, and the canonical homepage returns HTTP 200 with the correct canonical tag.
+
+At verification time Cloudflare still cached an earlier NXDOMAIN response, and the registry's separate RDAP lookup and Vercel's domain metadata still displayed the old list. Those cached results do not override the direct authoritative DNS result. Allow caches to expire; no further nameserver edits are required. Once public resolution is consistent, complete the Search Console steps below.
+
+Initial diagnostics found six nameservers: Vercel's two nameservers mixed with four Name.com nameservers. Vercel served the corrected `www` record while Name.com returned NXDOMAIN. The owner confirmed that this domain is used only for this website. The correction procedure, retained for future reference, is:
 
 1. Sign in to Name.com, open **My Domains**, choose `3dparallax.app`, then open **Manage Nameservers**.
 2. Keep exactly `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
