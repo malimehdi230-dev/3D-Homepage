@@ -4,9 +4,21 @@
 
 The affected homepage was `https://3dparallax.app/`. Search Console declared that URL as canonical but selected `https://www.3dparallax.app/`, based on its October 14 crawl. The intended canonical remains the HTTPS address without `www`.
 
-The repository now permanently redirects `www.3dparallax.app` and the production `3dparallax.vercel.app` alias to the corresponding path on `3dparallax.app`. The `www` hostname is attached to the existing Vercel project as a verified 308 domain redirect. Its explicit CNAME uses Vercel's project-specific recommended target. Other DNS records and nameservers are preserved. A hostname must be attached and have valid DNS/TLS before repository redirects can receive its traffic; copying a redirect rule alone cannot repair missing DNS.
+The repository includes permanent redirects from `www.3dparallax.app` and the production `3dparallax.vercel.app` alias to the corresponding path on `3dparallax.app`. Both hostnames are also attached to the existing Vercel project as verified 308 domain redirects. The explicit `www` CNAME uses Vercel's project-specific recommended target. The expired `www` HTTPS certificate has been replaced with a valid managed certificate. A hostname must be attached and have valid DNS/TLS before repository redirects can receive its traffic; copying a redirect rule alone cannot repair missing DNS.
 
 Public page variants such as `/index.html`, `/install.html`, `/privacy` and trailing slashes redirect to their canonical destinations. The sitemap contains only final, public HTTP 200 URLs. Each public page has one absolute self-canonical and matching Open Graph URL. The demo and 404 page no longer declare the unrelated marketing homepage as their canonical; they remain excluded from indexing.
+
+**Complete the DNS delegation at Name.com**
+
+Live checks on October 15 found six authoritative nameservers: Vercel's two nameservers mixed with four Name.com nameservers. Vercel serves the corrected `www` record, while Name.com sometimes returns NXDOMAIN (hostname not found). This inconsistent delegation must be corrected before treating the public hostname repair as complete. The owner confirmed that this domain is used only for this website.
+
+1. Sign in to Name.com, open **My Domains**, choose `3dparallax.app`, then open **Manage Nameservers**.
+2. Keep exactly `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
+3. Remove `ns1kwy.name.com`, `ns2gtx.name.com`, `ns3fhx.name.com` and `ns4fqz.name.com`, then save. These are nameserver settings at the registrar, not new NS records to add inside Vercel's DNS zone.
+4. Vercel already has the root ALIAS, explicit `www` CNAME and certificate-authority records. Keep them. There is no need to transfer registration, buy the domain again, or change the extension.
+5. Allow DNS caches to expire; nameserver propagation can take up to 48 hours. Check the public NS answers and that `https://www.3dparallax.app/` consistently redirects to `https://3dparallax.app/` over valid HTTPS before requesting another crawl.
+
+The connected Vercel account controls the website project and Vercel DNS zone; it cannot change delegation for a domain registered externally at Name.com. That last registrar action requires the owner's Name.com account. See [Name.com's nameserver instructions](https://www.name.com/de-de/support/articles/205934547-changing-nameservers-for-dns-management) and [Vercel's DNS migration instructions](https://vercel.com/docs/domains/managing-dns-records).
 
 **After deployment, use your signed-in Search Console account**
 
