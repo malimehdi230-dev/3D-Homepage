@@ -1,0 +1,5 @@
+{
+  "origin": "https://3dparallax.app",
+  "redirectHosts": ["www.3dparallax.app", "3dparallax.vercel.app"],
+  "chromeStoreUrl": "https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn"
+}

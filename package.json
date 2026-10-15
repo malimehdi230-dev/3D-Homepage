@@ -7,7 +7,8 @@
     "store-assets": "node scripts/store-assets.cjs",
     "package": "python scripts/package-extension.py",
     "build:website": "node scripts/build-website.cjs",
-    "test:website": "node tests/website.cjs"
+    "test:website": "node tests/website.cjs",
+    "test:seo": "node tests/seo.cjs"
   },
   "devDependencies": {
     "playwright": "1.64.0"

@@ -3,7 +3,30 @@
   "outputDirectory": "website-dist",
   "installCommand": "",
   "framework": null,
+  "trailingSlash": false,
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.3dparallax.app"
+        }
+      ],
+      "destination": "https://3dparallax.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "3dparallax.vercel.app"
+        }
+      ],
+      "destination": "https://3dparallax.app/:path*",
+      "permanent": true
+    },
     {
       "source": "/index.html",
       "destination": "/",
@@ -15,6 +38,16 @@
       "permanent": true
     },
     {
+      "source": "/wallpapers.html",
+      "destination": "/wallpapers",
+      "permanent": true
+    },
+    {
+      "source": "/widgets.html",
+      "destination": "/widgets",
+      "permanent": true
+    },
+    {
       "source": "/help.html",
       "destination": "/help",
       "permanent": true
@@ -22,6 +55,11 @@
     {
       "source": "/changelog.html",
       "destination": "/changelog",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html",
       "permanent": true
     }
   ],
@@ -35,16 +73,20 @@
       "destination": "/install.html"
     },
     {
+      "source": "/wallpapers",
+      "destination": "/wallpapers.html"
+    },
+    {
+      "source": "/widgets",
+      "destination": "/widgets.html"
+    },
+    {
       "source": "/help",
       "destination": "/help.html"
     },
     {
       "source": "/changelog",
       "destination": "/changelog.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/privacy.html"
     }
   ],
   "headers": [
@@ -61,7 +103,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-u8zHMskpY1T6Zi8S6k2/eBjfVD0vWqUXR1Paz6DB0uc='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https:; media-src 'self' https: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'sha256-sZnHauzybJNjMcv5kBy0LE6Rmiv/codjv7x2u3EaSaE=' 'sha256-pinOw8/9paPtY/KN3amy1IuWFDkQpH0C/0sHHN7lJbg=' 'sha256-6729H0hf/73tF+TzgHQSVvn3Dd/wyN8ELQe3LpDnXVY=' 'sha256-sZolfKFIHyZ5FTRq5DwRsSvGcWiKOeepBe4ADwiFybo=' 'sha256-WxKNt49yLsuY28Pem6GN2GAkE1tQ5qOQEN4sYYrj9Z4=' 'sha256-uRtWr4vJpe0Kx5MGrnvLXQipinBsoI4sA4uwUVW+RIU=' 'sha256-uGwBKgI1Mf1WpL626nIJYBMM66n0SaGevBHoxEwjmzE='; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https:; media-src 'self' https: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         }
       ]
     },

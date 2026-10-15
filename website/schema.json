@@ -6,6 +6,7 @@
       "@id": "https://3dparallax.app/#website",
       "url": "https://3dparallax.app/",
       "name": "3D Parallax",
+      "alternateName": "3D Parallax for Chrome",
       "description": "A personal Chrome New Tab homepage with resizable widgets, themes, wallpapers and quick links.",
       "inLanguage": "en"
     },
@@ -15,11 +16,14 @@
       "name": "3D Parallax",
       "url": "https://3dparallax.app/",
       "applicationCategory": "BrowserApplication",
+      "installUrl": "https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn",
+      "sameAs": "https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn",
       "operatingSystem": "Chrome on Windows, macOS and Linux",
       "description": "Customize Chrome's New Tab page with resizable widgets, quick links, 18 themes, personal wallpapers and optional weather and AI tools.",
       "screenshot": "https://3dparallax.app/assets/homepage.png",
       "image": "https://3dparallax.app/assets/logo-p-512.png",
       "isAccessibleForFree": true,
+      "offers": {"@type":"Offer","price":"0","priceCurrency":"USD","url":"https://chromewebstore.google.com/detail/3d-parallax/cgodhedchgcogoicfmdpgfopbfkcafkn"},
       "author": {
         "@type": "Person",
         "name": "Muhammad Ali Mehdi"
